@@ -12,6 +12,7 @@ x-back-environment: &back-environment
   DEBUG: ${DEBUG}
   DOMAIN_NAME: ${DOMAIN_NAME}
   TRUSTED_ORIGIN: ${TRUSTED_ORIGIN}
+  CAS_SERVER_URL: ${CAS_SERVER_URL:-https://idp.enpc.fr/cas/}
 
 services:
   db:

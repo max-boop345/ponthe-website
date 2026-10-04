@@ -176,11 +176,18 @@ LOGOUT_REDIRECT_URL = "/"
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "galerie.auth.EmailBackend",
-    "django_cas_ng.backends.CASBackend",
+    "galerie.auth.CASBackend",
 ]
 
 # SSO CONNECT
-CAS_SERVER_URL = "http://cas.enpc.fr/cas/"
+#
+# The school moved its CAS from cas.enpc.fr to idp.enpc.fr. The address comes
+# from the environment so that the next move needs neither a code change nor a
+# new image.
+CAS_SERVER_URL = os.environ.get("CAS_SERVER_URL", "https://idp.enpc.fr/cas/")
+# Django only ever sees plain HTTP behind nginx, and would hand the CAS an
+# http:// address to send the ticket back to.
+CAS_FORCE_SSL_SERVICE_URL = not DEBUG
 CAS_CREATE_USER = True
 CAS_CHECK_NEXT = False
 CAS_REDIRECT_URL = "/"
