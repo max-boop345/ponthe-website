@@ -3,6 +3,7 @@ import os
 import galerie.loader as loader
 import galerie.settings as settings
 from api.models import File, Gallery, Year
+from api.permissions import IsManager, is_manager
 from api.serializers import (
     FileSerializer,
     GallerySerializer,
@@ -14,7 +15,7 @@ from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import slugify
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 
@@ -80,7 +81,7 @@ def get_view(request):
         if request.GET.get("view") is not None:
             galleries = galleries.filter(view=request.GET.get("view"))
 
-        if request.user.is_authenticated and not request.user.is_superuser:
+        if request.user.is_authenticated and not is_manager(request.user):
             galleries = galleries.filter(
                 Q(visibility=Gallery.Visibility.PUBLIC)
                 | Q(visibility=Gallery.Visibility.SCHOOL)
@@ -98,7 +99,7 @@ def get_galleries(request):
         galleries = Gallery.objects.filter(
             visibility=Gallery.Visibility.PUBLIC
         ).order_by("-date")
-    elif request.user.is_staff or request.user.is_superuser:
+    elif is_manager(request.user):
         galleries = Gallery.objects.filter(view=Gallery.View.GALLERY).order_by("-date")
     else:
         galleries = Gallery.objects.filter(
@@ -116,7 +117,7 @@ def get_expositions(request):
         galleries = Gallery.objects.filter(
             visibility=Gallery.Visibility.PUBLIC
         ).order_by("-date")
-    elif request.user.is_staff or request.user.is_superuser:
+    elif is_manager(request.user):
         galleries = Gallery.objects.filter(view=Gallery.View.EXPOSITION).order_by(
             "-date"
         )
@@ -161,7 +162,7 @@ def get_pics(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsManager])
 def create_gallery(request):
     if "year" not in request.data:
         request.data["year"] = Year.objects.last().pk
@@ -201,7 +202,7 @@ def create_gallery(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsManager])
 def create_year(request):
     serializer = YearSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -210,7 +211,7 @@ def create_year(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsManager])
 def create_promo(request):
     serializer = PromoSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -221,7 +222,7 @@ def create_promo(request):
 # The two routes below re-run the import of a gallery, e.g. after the worker was
 # down. They take the gallery slug, never a path: the folder is derived from it.
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsManager])
 def load_folder_into_gallery(request):
     gal = get_object_or_404(Gallery, slug=request.data.get("slug"))
     loader.load_folder_into_gallery.delay(gal.slug)
@@ -229,7 +230,7 @@ def load_folder_into_gallery(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsManager])
 def generate_thumbnails(request):
     gal = get_object_or_404(Gallery, slug=request.data.get("slug"))
     loader.generate_thumbnails.delay(gal.slug)
@@ -237,7 +238,7 @@ def generate_thumbnails(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated, IsAdminUser])
+@permission_classes([IsManager])
 def change_visibility(request):
     gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
     if gallery is None:
@@ -253,7 +254,7 @@ def change_visibility(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated, IsAdminUser])
+@permission_classes([IsManager])
 def change_view(request):
     gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
     if gallery is None:
@@ -266,7 +267,7 @@ def change_view(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsManager])
 def delete_gallery(request):
     gal = Gallery.objects.get(name=request.data["name"])
     gal.delete()
@@ -275,7 +276,7 @@ def delete_gallery(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsManager])
 def delete_pic(request):
     gallery = Gallery.objects.get(name=request.data["name"])
     file = File.objects.get(

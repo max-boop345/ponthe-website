@@ -22,14 +22,17 @@ class GalleryAccessTest(TestCase):
         (PUBLIC, "student"): True,
         (PUBLIC, "staff"): True,
         (PUBLIC, "superuser"): True,
+        (PUBLIC, "root"): True,
         (SCHOOL, None): False,
         (SCHOOL, "student"): True,
         (SCHOOL, "staff"): True,
         (SCHOOL, "superuser"): True,
+        (SCHOOL, "root"): True,
         (PRIVATE, None): False,
         (PRIVATE, "student"): False,
         (PRIVATE, "staff"): True,
         (PRIVATE, "superuser"): True,
+        (PRIVATE, "root"): True,
     }
 
     @classmethod
@@ -49,6 +52,8 @@ class GalleryAccessTest(TestCase):
             "student": User.objects.create_user("student"),
             "staff": User.objects.create_user("staff", is_staff=True),
             "superuser": User.objects.create_superuser("superuser"),
+            # A superuser who is not staff: there is one in production.
+            "root": User.objects.create_user("root", is_superuser=True),
         }
 
     def each_case(self):
@@ -166,7 +171,7 @@ class ApiDefaultsTest(TestCase):
         cls.staff = User.objects.create_user("staff", password="secret", is_staff=True)
         cls.student = User.objects.create_user("student")
 
-    def test_a_route_without_declared_permissions_is_for_staff(self):
+    def test_a_route_without_declared_permissions_is_for_managers(self):
         self.assertEqual(self.client.get("/api/").status_code, 403)
         self.client.force_login(self.student)
         self.assertEqual(self.client.get("/api/").status_code, 403)
@@ -189,3 +194,53 @@ class ApiDefaultsTest(TestCase):
         credentials = base64.b64encode(b"staff:secret").decode()
         response = self.client.get("/api/", HTTP_AUTHORIZATION=f"Basic {credentials}")
         self.assertEqual(response.status_code, 403)
+
+
+class ManagerRoleTest(TestCase):
+    """One role runs the galleries: staff or superuser, on the pages and the API."""
+
+    @classmethod
+    def setUpTestData(cls):
+        year = Year.objects.create(name="2026-2027")
+        Gallery.objects.create(name="Gala", slug="gala", description="", year=year)
+        cls.users = {
+            "student": User.objects.create_user("student"),
+            "staff": User.objects.create_user("staff", is_staff=True),
+            "root": User.objects.create_user("root", is_superuser=True),
+        }
+
+    def each_user(self):
+        for who, manages in (("student", False), ("staff", True), ("root", True)):
+            self.client.force_login(self.users[who])
+            with self.subTest(user=who):
+                yield manages
+
+    def test_management_pages(self):
+        for manages in self.each_user():
+            for url in ("/gestion/", "/gestion/gallery/gala"):
+                response = self.client.get(url)
+                if manages:
+                    self.assertEqual(response.status_code, 200)
+                else:
+                    self.assertRedirects(
+                        response, f"/login/?next={url}", fetch_redirect_response=False
+                    )
+
+    def test_management_api(self):
+        for manages in self.each_user():
+            response = post_json(
+                self.client,
+                "/api/gallery/change_view/",
+                {"slug": "gala", "view": "galerie"},
+            )
+            self.assertEqual(response.status_code, 200 if manages else 403)
+
+    def test_private_galleries_are_listed_for_managers_only(self):
+        for manages in self.each_user():
+            slugs = [g["slug"] for g in self.client.get("/api/get_view").json()]
+            self.assertEqual(slugs, ["gala"] if manages else [])
+
+    def test_the_menu_shows_the_management_link_to_managers(self):
+        for manages in self.each_user():
+            page = self.client.get("/galleries/").content.decode()
+            self.assertIn(f"is_staff = {'true' if manages else 'false'};", page)

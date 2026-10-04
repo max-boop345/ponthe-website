@@ -1,3 +1,4 @@
+from api.permissions import is_manager
 from django.db import models
 from django.utils import timezone
 
@@ -50,7 +51,7 @@ class Gallery(models.Model):
         """
         The single access rule for a gallery, its picture list and its files:
         public galleries are open to everyone, school galleries to any logged-in
-        user, and everything else (private) to staff only.
+        user, and everything else (private) to those who run the galleries.
         """
         if self.visibility == Gallery.Visibility.PUBLIC:
             return True
@@ -58,7 +59,7 @@ class Gallery(models.Model):
             return False
         if self.visibility == Gallery.Visibility.SCHOOL:
             return True
-        return user.is_staff or user.is_superuser
+        return is_manager(user)
 
 
 class File(models.Model):

@@ -207,9 +207,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
     # Closed unless a view says otherwise: a route that forgets to declare its
-    # permissions is for staff, not for everyone.
+    # permissions is for the people who run the galleries, not for everyone.
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAdminUser",
+        "api.permissions.IsManager",
     ],
 }
 

@@ -1,6 +1,7 @@
 import zipfile
 
 from api.models import Gallery
+from api.permissions import is_manager
 from django.contrib.auth.decorators import user_passes_test
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponseBadRequest
@@ -8,12 +9,12 @@ from django.shortcuts import get_object_or_404, render
 from galerie.loader import load_zip_into_gallery
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(is_manager)
 def index_view(request):
     return render(request, "gestionindex.html")
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(is_manager)
 def gallery_view(request, slug=""):
     context = {"slug": slug}
     if request.method == "POST" and request.FILES.get("zipfile"):
