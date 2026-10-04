@@ -1,7 +1,6 @@
-from datetime import datetime
-
 from django.contrib.auth import models as models2
 from django.db import models
+from django.utils import timezone
 
 
 class Year(models.Model):
@@ -23,9 +22,10 @@ class Student(models.Model):
 class Gallery(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(blank=False, max_length=1000, unique=True)
-    slug = models.SlugField(max_length=1000, blank=False, default="")
+    # Every lookup goes through the slug, and it names the folder on disk.
+    slug = models.SlugField(max_length=1000, blank=False, default="", unique=True)
     description = models.CharField(max_length=10000)
-    date = models.DateTimeField(blank=False, default=datetime.now)
+    date = models.DateTimeField(blank=False, default=timezone.now)
 
     class Visibility(models.TextChoices):
         PUBLIC = "publique"
@@ -75,6 +75,14 @@ class File(models.Model):
     file_full_name = models.CharField(blank=False, max_length=1100)
     link = models.CharField(max_length=10000)
     gallery = models.ForeignKey(Gallery, on_delete=models.CASCADE, default=None)
+
+    class Meta:
+        constraints = [
+            # Two import tasks running at once used to register each picture twice.
+            models.UniqueConstraint(
+                fields=["gallery", "file_full_name"], name="unique_file_per_gallery"
+            )
+        ]
 
 
 class Reaction(models.Model):

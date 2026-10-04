@@ -61,15 +61,17 @@ def load_folder_into_gallery(slug):
         logger.warning("Gallery %s no longer exists, nothing to load", slug)
         return
     for filename in image_files(gallery_path(slug, "uploads")):
-        if File.objects.filter(gallery=gal, file_full_name=filename).exists():
-            continue
         name, extension = split_name(filename)
-        File.objects.create(
-            file_name=name,
-            file_extension=extension,
-            file_full_name=filename,
-            link="/media/" + slug,
+        # get_or_create leans on the unique constraint: two tasks loading the
+        # same gallery at once cannot both insert the picture.
+        File.objects.get_or_create(
             gallery=gal,
+            file_full_name=filename,
+            defaults={
+                "file_name": name,
+                "file_extension": extension,
+                "link": "/media/" + slug,
+            },
         )
 
 
