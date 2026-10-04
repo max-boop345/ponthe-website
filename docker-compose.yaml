@@ -1,5 +1,18 @@
 version: "3.6"
 
+# Shared by `back` and `celery-worker`: a variable added here reaches both.
+x-back-environment: &back-environment
+  DB_HOST: ${DB_HOST}
+  DB_PORT: ${DB_PORT}
+  DB_NAME: ${DB_NAME}
+  DB_USER: ${DB_USER}
+  DB_PASSWORD: ${DB_PASSWORD}
+  REDIS_HOST: ${REDIS_HOST}
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  DEBUG: ${DEBUG}
+  DOMAIN_NAME: ${DOMAIN_NAME}
+  TRUSTED_ORIGIN: ${TRUSTED_ORIGIN}
+
 services:
   db:
     image: postgres
@@ -38,20 +51,11 @@ services:
       context: back
       dockerfile: Dockerfile
       target: development
+    image: ponthe-back-dev
     command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "$BACK_PORT:8000"
-    environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      DEBUG: ${DEBUG}
-      DOMAIN_NAME: ${DOMAIN_NAME}
-      TRUSTED_ORIGIN: ${TRUSTED_ORIGIN}
+    environment: *back-environment
     restart: always
     volumes:
       - bundles:/src/galerie/static/react
@@ -66,6 +70,26 @@ services:
       redis:
         condition: service_healthy
 
+
+  celery-worker:
+    build:
+      context: back
+      dockerfile: Dockerfile
+      target: development
+    image: ponthe-back-dev
+    entrypoint: ["celery", "-A", "galerie", "worker", "--loglevel=info", "--concurrency=2"]
+    environment: *back-environment
+    restart: always
+    volumes:
+      - ./back:/src
+    networks:
+      - db_link
+      - cache_link
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   webinstaller:
     build:

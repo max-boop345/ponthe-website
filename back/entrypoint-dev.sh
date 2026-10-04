@@ -1,8 +1,5 @@
 #!/bin/sh
 
-echo "Starting celery..."
-celery -A galerie worker --loglevel=info --logfile=/var/log/celery.log --detach
-
 echo "Check if PostgreSQL started..."
 while ! nc -z $DB_HOST $DB_PORT; do
     sleep 0.1

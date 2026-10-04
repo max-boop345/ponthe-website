@@ -1,5 +1,21 @@
 version: "3.6"
 
+# Shared by `back` and `celery-worker`: a variable added here reaches both.
+x-back-environment: &back-environment
+  DB_HOST: ${DB_HOST}
+  DB_PORT: ${DB_PORT}
+  DB_NAME: ${DB_NAME}
+  DB_USER: ${DB_USER}
+  DB_PASSWORD: ${DB_PASSWORD}
+  REDIS_HOST: ${REDIS_HOST}
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  SECRET_KEY: ${SECRET_KEY}
+  DEBUG: ${DEBUG}
+  DOMAIN_NAME: ${DOMAIN_NAME}
+  GUNICORN_NB_WORKERS: ${GUNICORN_NB_WORKERS}
+  SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT}
+  TRUSTED_ORIGIN: ${TRUSTED_ORIGIN}
+
 services:
   db:
     image: postgres:13.12-bookworm
@@ -38,21 +54,10 @@ services:
       context: back
       dockerfile: Dockerfile
       target: production
+    # One image for `back` and `celery-worker`: building either refreshes both.
+    image: ponthe-back
     command: gunicorn galerie.wsgi:application --bind 0.0.0.0:8000
-    environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      SECRET_KEY: ${SECRET_KEY}
-      DEBUG: ${DEBUG}
-      DOMAIN_NAME: ${DOMAIN_NAME}
-      GUNICORN_NB_WORKERS: ${GUNICORN_NB_WORKERS}
-      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT}
-      TRUSTED_ORIGIN: ${TRUSTED_ORIGIN}
+    environment: *back-environment
     restart: always
     volumes:
       - bundles:/src/galerie/static/react
@@ -70,6 +75,34 @@ services:
         condition: service_healthy
       webinstaller:
         condition: service_completed_successfully
+
+  # The worker used to be started in the background by the entrypoint of `back`:
+  # when it died nothing restarted it, and uploads were accepted but never
+  # processed. As its own service it is restarted and shows up in `docker ps`.
+  celery-worker:
+    build:
+      context: back
+      dockerfile: Dockerfile
+      target: production
+    image: ponthe-back
+    entrypoint: ["celery", "-A", "galerie", "worker", "--loglevel=info", "--concurrency=2"]
+    environment: *back-environment
+    restart: always
+    volumes:
+      - ./back/media:/src/media
+    networks:
+      - db_link
+      - cache_link
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+        test: celery -A galerie inspect ping -d celery@$$HOSTNAME
+        interval: 60s
+        timeout: 20s
+        retries: 3
 
   nginx:
     build: nginx
