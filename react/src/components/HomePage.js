@@ -22,7 +22,7 @@ export default function HomePage (){
             <Container fluid>
                 <Row>
                     <Col xs="12" sm="6" md="8" lg="8">
-                        <img className="img-team" src="/static/assets/img/028_group.png"/>
+                        <img className="img-team" src="/static/assets/img/028_group.jpg"/>
                     </Col>
                     <Col xs="12" sm="6" md="4" lg="4">
                         <div className="team-desc">

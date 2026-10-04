@@ -11,10 +11,12 @@ fs.readdirSync('./src/pages/')
     entryMap[file.replace(/\.(j|t)sx?$/, '')] = './src/pages/' + file;
   });
 
-module.exports = (env) => {
+module.exports = (env, argv) => {
+  const production = argv.mode === 'production';
   return {
-    devtool: 'eval-source-map',
-    mode: env.mode,
+    // Source maps are for development: evaluated ones inflate every bundle.
+    devtool: production ? false : 'eval-source-map',
+    mode: production ? 'production' : 'development',
     entry: entryMap,
     resolve: {
       modules: [__dirname, 'node_modules'],
