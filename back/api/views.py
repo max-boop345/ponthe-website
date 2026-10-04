@@ -2,7 +2,7 @@ import os
 
 import galerie.loader as loader
 import galerie.settings as settings
-from api.models import Face, File, Gallery, Student, Year
+from api.models import Face, File, Gallery, Year
 from api.serializers import (
     FileSerializer,
     GallerySerializer,
@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import slugify
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 
@@ -70,6 +70,7 @@ def getRoutes(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def get_view(request):
     if request.method == "GET":
         galleries = Gallery.objects.all()
@@ -91,6 +92,7 @@ def get_view(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def get_galleries(request):
     if not request.user.is_authenticated:
         galleries = Gallery.objects.filter(
@@ -108,6 +110,7 @@ def get_galleries(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def get_expositions(request):
     if not request.user.is_authenticated:
         galleries = Gallery.objects.filter(
@@ -133,6 +136,7 @@ FORBIDDEN_GALLERY = {
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def get_gallery(request):
     gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
     if gallery is None:
@@ -143,6 +147,7 @@ def get_gallery(request):
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def get_pics(request):
     gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
     if gallery is None:
@@ -282,17 +287,17 @@ def delete_pic(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def years(request):
     years = Year.objects.all().order_by("pk").reverse()
     serializer = YearSerializer(years, many=True)
     return Response(serializer.data)
 
 
-@permission_classes([IsAuthenticated])
+# @api_view has to come first: placed under @permission_classes, as it used to
+# be, the permission was silently ignored.
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def get_associated_pictures(request):
-    student = Student.objects.get(user=request.user)
-    files = []
-    for face in Face.objects.filter(student=student):
-        files.append(face.file)
-    return Response(FileSerializer(files, many=True).data)
+    faces = Face.objects.filter(student__user=request.user).select_related("file")
+    return Response(FileSerializer([face.file for face in faces], many=True).data)

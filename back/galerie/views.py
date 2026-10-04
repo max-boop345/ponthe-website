@@ -1,16 +1,75 @@
 import csv
+import hashlib
 import io
+import logging
+from urllib.parse import quote
 
 import api.models as models
 from api.models import Gallery
+from django.conf import settings
 from django.contrib.auth import models as models2
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import user_passes_test
+from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
 from .settings import BASE_DIR, LOGIN_REDIRECT_URL, LOGIN_URL
+
+logger = logging.getLogger(__name__)
+
+
+class LoginView(auth_views.LoginView):
+    """
+    Password login, with a limit on failed attempts.
+
+    The limit is counted per account, not per client: behind the two nginx
+    proxies every request arrives from the same address. After
+    LOGIN_MAX_FAILURES failures the account's password login is put on hold
+    for LOGIN_FAILURE_WINDOW seconds; the SSO is not affected.
+
+    The counter lives in the cache. If the cache is down the limit is skipped
+    rather than the login refused.
+    """
+
+    redirect_authenticated_user = True
+
+    def failures_key(self):
+        account = self.request.POST.get("username", "").strip().lower()
+        return "login-failures:" + hashlib.sha256(account.encode()).hexdigest()
+
+    def post(self, request, *args, **kwargs):
+        try:
+            failures = cache.get(self.failures_key(), 0)
+        except Exception:
+            logger.exception("Login limit skipped: the cache is unreachable")
+            failures = 0
+        if failures >= settings.LOGIN_MAX_FAILURES:
+            return HttpResponse(
+                "Trop de tentatives pour ce compte. Réessayez dans un quart "
+                "d'heure, ou utilisez la connexion SSO.",
+                status=429,
+                content_type="text/plain; charset=utf-8",
+            )
+        return super().post(request, *args, **kwargs)
+
+    def form_invalid(self, form):
+        key = self.failures_key()
+        try:
+            cache.add(key, 0, settings.LOGIN_FAILURE_WINDOW)
+            cache.incr(key)
+        except Exception:
+            logger.exception("Login failure not counted: the cache is unreachable")
+        return super().form_invalid(form)
+
+    def form_valid(self, form):
+        try:
+            cache.delete(self.failures_key())
+        except Exception:
+            logger.exception("Login counter not reset: the cache is unreachable")
+        return super().form_valid(form)
 
 
 def root_redirect(request):
@@ -39,7 +98,9 @@ def media(request, path):
         response = HttpResponse()
         # Content-type will be detected by nginx
         del response["Content-Type"]
-        response["X-Accel-Redirect"] = "/protected/media/" + path
+        # nginx expects an escaped URI here: a raw accent, space, "%" or "?"
+        # in a file name sends it looking for another file.
+        response["X-Accel-Redirect"] = "/protected/" + quote(path)
         return response
     else:
         return HttpResponseForbidden()

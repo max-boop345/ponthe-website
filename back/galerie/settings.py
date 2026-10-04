@@ -43,6 +43,11 @@ else:
         SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # TLS ends at the host's nginx, which says so in X-Forwarded-Proto; the
+    # container's nginx passes the header along. Without this Django believes
+    # every request came over plain HTTP.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_HSTS_SECONDS = 30 * 24 * 3600
     CSRF_TRUSTED_ORIGINS = [os.environ["TRUSTED_ORIGIN"]]
 
 # Application definition
@@ -194,9 +199,35 @@ CAS_CHECK_NEXT = False
 CAS_REDIRECT_URL = "/"
 CAS_ADMIN_PREFIX = "admin/"
 
-# Celery settings
+# django_rest_framework
+REST_FRAMEWORK = {
+    # Session cookie only. HTTP Basic, on by default, let anyone try passwords
+    # against any API route.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    # Closed unless a view says otherwise: a route that forgets to declare its
+    # permissions is for staff, not for everyone.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAdminUser",
+    ],
+}
+
+# Redis: database 0 for Celery, 1 for the cache
 REDIS_HOST = os.environ["REDIS_HOST"]
 REDIS_PASSWORD = os.environ["REDIS_PASSWORD"]
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/1",
+    }
+}
+
+# Password login: failures allowed per account before it is put on hold.
+LOGIN_MAX_FAILURES = 10
+LOGIN_FAILURE_WINDOW = 15 * 60
+
+# Celery settings
 CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
 CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
 CELERY_ACCEPT_CONTENT = ["application/json"]

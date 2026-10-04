@@ -2,6 +2,7 @@ from unittest import mock
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from galerie.auth import CASBackend
@@ -128,3 +129,61 @@ class EmailBackendTest(TestCase):
             authenticate(username="Shared@enpc.fr", password="second"), two
         )
         self.assertIsNone(authenticate(username="shared@enpc.fr", password="wrong"))
+
+
+LOCAL_CACHE = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+
+@override_settings(CACHES=LOCAL_CACHE, LOGIN_MAX_FAILURES=3)
+class LoginLimitTest(TestCase):
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user("jeanne", email="jeanne@enpc.fr", password="right")
+
+    def login(self, password, username="jeanne@enpc.fr"):
+        return self.client.post("/login/", {"username": username, "password": password})
+
+    def test_an_account_is_put_on_hold_after_too_many_failures(self):
+        for _ in range(3):
+            self.assertEqual(self.login("wrong").status_code, 200)
+        # Even the right password is refused now, and so is another spelling.
+        self.assertEqual(self.login("right").status_code, 429)
+        self.assertEqual(self.login("right", " Jeanne@ENPC.fr ").status_code, 429)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_other_accounts_are_not_affected(self):
+        User.objects.create_user("paul", email="paul@enpc.fr", password="right")
+        for _ in range(3):
+            self.login("wrong")
+        self.assertEqual(self.login("right", "paul@enpc.fr").status_code, 302)
+
+    def test_a_successful_login_resets_the_count(self):
+        self.login("wrong")
+        self.login("wrong")
+        self.assertEqual(self.login("right").status_code, 302)
+        self.client.logout()
+        self.login("wrong")
+        self.login("wrong")
+        self.assertEqual(self.login("right").status_code, 302)
+
+    def test_login_still_works_when_the_cache_is_down(self):
+        broken = mock.Mock()
+        broken.get.side_effect = broken.add.side_effect = ConnectionError
+        broken.incr.side_effect = broken.delete.side_effect = ConnectionError
+        with mock.patch("galerie.views.cache", broken), self.assertLogs(
+            "galerie.views", level="ERROR"
+        ):
+            self.assertEqual(self.login("wrong").status_code, 200)
+            self.assertEqual(self.login("right").status_code, 302)
+
+
+class ProxyTest(TestCase):
+    @override_settings(
+        SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"),
+        SECURE_HSTS_SECONDS=3600,
+    )
+    def test_https_is_recognised_behind_nginx(self):
+        plain = self.client.get("/")
+        self.assertNotIn("Strict-Transport-Security", plain)
+        forwarded = self.client.get("/", HTTP_X_FORWARDED_PROTO="https")
+        self.assertEqual(forwarded["Strict-Transport-Security"], "max-age=3600")

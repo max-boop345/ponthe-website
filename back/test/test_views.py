@@ -1,8 +1,7 @@
 from api.views import getRoutes
-from django.contrib.auth.views import LoginView
 from django.test import SimpleTestCase, TestCase
 from django.urls import resolve, reverse
-from galerie.views import galleries, gallery, index, material
+from galerie.views import LoginView, galleries, gallery, index, material
 from gestion.views import index_view
 
 

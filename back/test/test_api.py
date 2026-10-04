@@ -77,8 +77,16 @@ class GalleryAccessTest(TestCase):
             if status == 200:
                 self.assertEqual(
                     response["X-Accel-Redirect"],
-                    f"/protected/media/{slug}/uploads/picture.jpg",
+                    f"/protected/{slug}/uploads/picture.jpg",
                 )
+
+    def test_file_names_are_escaped_for_nginx(self):
+        slug = self.slugs[PUBLIC]
+        response = self.client.get(f"/media/{slug}/uploads/été 100%25 %3F.jpg")
+        self.assertEqual(
+            response["X-Accel-Redirect"],
+            f"/protected/{slug}/uploads/%C3%A9t%C3%A9%20100%25%20%3F.jpg",
+        )
 
     def test_unknown_gallery(self):
         self.client.force_login(self.users["superuser"])
@@ -149,3 +157,41 @@ class ManagementRoutesTest(TestCase):
                     post_json(self.client, url, {"slug": "gala"}).status_code, 200
                 )
                 delay.assert_called_once_with("gala")
+
+
+class ApiDefaultsTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff = User.objects.create_user("staff", password="secret", is_staff=True)
+        cls.student = User.objects.create_user("student")
+
+    def test_a_route_without_declared_permissions_is_for_staff(self):
+        self.assertEqual(self.client.get("/api/").status_code, 403)
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get("/api/").status_code, 403)
+        self.client.force_login(self.staff)
+        self.assertEqual(self.client.get("/api/").status_code, 200)
+
+    def test_public_routes_stay_public(self):
+        for url in (
+            "/api/get_view",
+            "/api/years/",
+            "/api/galleries/",
+            "/api/expositions/",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_basic_authentication_is_not_accepted(self):
+        import base64
+
+        credentials = base64.b64encode(b"staff:secret").decode()
+        response = self.client.get("/api/", HTTP_AUTHORIZATION=f"Basic {credentials}")
+        self.assertEqual(response.status_code, 403)
+
+    def test_associated_pictures_require_a_login(self):
+        self.assertEqual(self.client.get("/api/associated_pics/").status_code, 403)
+        self.client.force_login(self.student)
+        response = self.client.get("/api/associated_pics/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])

@@ -19,7 +19,6 @@ import django_cas_ng.views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from . import views
@@ -34,11 +33,7 @@ urlpatterns = [
     path("material/", views.material, name="material"),
     path("gestion/", include("gestion.urls")),
     path("api/", include("api.urls")),
-    path(
-        "login/",
-        auth_views.LoginView.as_view(redirect_authenticated_user=True),
-        name="login",
-    ),  # forces redirection of already authenticated users
+    path("login/", views.LoginView.as_view(), name="login"),
     path("", include("django.contrib.auth.urls")),
     path(
         "accounts/login/", django_cas_ng.views.LoginView.as_view(), name="cas_ng_login"
