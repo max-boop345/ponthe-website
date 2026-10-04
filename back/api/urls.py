@@ -1,5 +1,4 @@
 from api.views import (
-    FileUploadView,
     change_view,
     change_visibility,
     create_gallery,
@@ -15,7 +14,6 @@ from api.views import (
     get_pics,
     get_view,
     getRoutes,
-    import_users,
     load_folder_into_gallery,
     years,
 )
@@ -30,11 +28,9 @@ urlpatterns = [
     path("gallery/pics/delete/", delete_pic),
     path("gallery/", get_gallery),
     path("gallery/delete/", delete_gallery),
-    path("gallery/upload/", FileUploadView.as_view()),
     path("galleries/create/", create_gallery),
     path("promo/create/", create_promo),
     path("year/create/", create_year),
-    path("import/", import_users),
     path("gallery/change_visibility/", change_visibility),
     path("gallery/change_view/", change_view),
     path("years/", years),

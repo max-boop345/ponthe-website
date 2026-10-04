@@ -9,15 +9,13 @@ from api.serializers import (
     PromoSerializer,
     YearSerializer,
 )
-from django.contrib.auth.models import User
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import slugify
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 
 @api_view(["GET"])
@@ -215,38 +213,35 @@ def create_promo(request):
     return Response(serializer.data)
 
 
+# The two routes below re-run the import of a gallery, e.g. after the worker was
+# down. They take the gallery slug, never a path: the folder is derived from it.
 @api_view(["POST"])
-@permission_classes(
-    (
-        IsAuthenticated,
-        IsAdminUser,
-    )
-)
+@permission_classes([IsAdminUser])
 def load_folder_into_gallery(request):
-    gal = Gallery.objects.get(slug=request.data["slug"])
-    loader.load_folder_into_gallery(request.data["folder"], gal)
+    gal = get_object_or_404(Gallery, slug=request.data.get("slug"))
+    loader.load_folder_into_gallery.delay(gal.slug)
     return Response(GallerySerializer(gal).data)
 
 
 @api_view(["POST"])
-@permission_classes(
-    (
-        IsAuthenticated,
-        IsAdminUser,
-    )
-)
+@permission_classes([IsAdminUser])
 def generate_thumbnails(request):
-    loader.generate_thumbnails(request.data["folder"])
+    gal = get_object_or_404(Gallery, slug=request.data.get("slug"))
+    loader.generate_thumbnails.delay(gal.slug)
     return Response(status=200)
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def change_visibility(request):
-    gallery = Gallery.objects.filter(slug=request.data["slug"])
-    if gallery.count() == 0:
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    gallery = gallery[0]
+    # save() does not check `choices`: an unknown value would be stored as is.
+    if request.data.get("visibility") not in Gallery.Visibility.values:
+        return Response(
+            {"status": "error", "message": "Visibilité inconnue."}, status=400
+        )
     gallery.visibility = request.data["visibility"]
     gallery.save()
     return Response(GallerySerializer(gallery).data)
@@ -255,10 +250,11 @@ def change_visibility(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def change_view(request):
-    gallery = Gallery.objects.filter(slug=request.data["slug"])
-    if gallery.count() == 0:
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    gallery = gallery[0]
+    if request.data.get("view") not in Gallery.View.values:
+        return Response({"status": "error", "message": "Vue inconnue."}, status=400)
     gallery.view = request.data["view"]
     gallery.save()
     return Response(GallerySerializer(gallery).data)
@@ -285,26 +281,6 @@ def delete_pic(request):
     return Response(FileSerializer(file).data)
 
 
-class FileUploadView(APIView):
-    parser_classes = [FileUploadParser]
-    permission_classes = [IsAdminUser]
-
-    def put(self, request, filename, format="jpg"):
-        file_obj = request.data["file"]
-        file = open(str(settings.BASE_DIR) + "/galerie/media/" + filename)
-        for chunk in file_obj.chunks():
-            file.write(chunk)
-        file.close()
-        return Response(status=204)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated, IsAdminUser])
-def import_users(request):
-    read_users(str(settings.BASE_DIR) + "/api/users.sql")
-    return Response(status=200)
-
-
 @api_view(["GET"])
 def years(request):
     years = Year.objects.all().order_by("pk").reverse()
@@ -321,28 +297,3 @@ def get_associated_pictures(request):
         files.append(face.file)
     return Response(FileSerializer(files, many=True).data)
 
-
-def read_users(file):
-    file = open(file, encoding="utf8")
-    file.readline()
-    i = 0
-    for lign in file:
-        if i < 10:
-            args = lign.replace("(", "").replace(")", "").split(",")
-            uid = int(args[0])
-            firstname = args[2].replace("'", "").replace(" ", "")
-            lastname = args[3].replace("'", "").replace(" ", "")
-            year = args[6].replace("'", "")
-            username = args[8].replace("'", "").replace(" ", "").lower()
-            mail = args[9].replace("'", "")
-            join_date = args[12].replace("'", "").split(" ")[1]
-            print(uid, firstname, lastname, year, username, mail, join_date)
-
-            user = User.objects.create_user(username=username, email=mail, password="e")
-            user.first_name = firstname
-            user.last_name = lastname
-            user.date_joined = join_date
-            user.save()
-            i += 1
-        else:
-            break

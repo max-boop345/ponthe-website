@@ -85,6 +85,7 @@ export default function Gallery({props}){
     };
 
     const deleteGallery = () => {
+      if (!window.confirm('Supprimer la galerie « ' + name + ' » et toutes ses photos ?')) return
       const deleteOptions = {
         method: 'POST',
         headers: {
