@@ -54,18 +54,18 @@ class Gallery(models.Model):
     )
 
     def can_user_access(self, user):
-        if not user.is_authenticated and (
-            not self.visibility == Gallery.Visibility.PUBLIC
-        ):
-            return False
-        elif (
-            not user.is_staff
-            and not user.is_superuser
-            and self.visibility is Gallery.Visibility.PRIVATE
-        ):
-            return False
-        else:
+        """
+        The single access rule for a gallery, its picture list and its files:
+        public galleries are open to everyone, school galleries to any logged-in
+        user, and everything else (private) to staff only.
+        """
+        if self.visibility == Gallery.Visibility.PUBLIC:
             return True
+        if not user.is_authenticated:
+            return False
+        if self.visibility == Gallery.Visibility.SCHOOL:
+            return True
+        return user.is_staff or user.is_superuser
 
 
 class File(models.Model):

@@ -128,73 +128,33 @@ def get_expositions(request):
     return Response(serializer.data)
 
 
+FORBIDDEN_GALLERY = {
+    "status": "error",
+    "message": "Vous n'êtes pas autorisé à voir cette galerie.",
+}
+
+
 @api_view(["POST"])
 def get_gallery(request):
-    gallery = Gallery.objects.filter(slug=request.data["slug"])
-    if gallery.count() == 0:
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    # check if request user is allowed to see this gallery
-    if not request.user.is_authenticated and (
-        not gallery[0].visibility == Gallery.Visibility.PUBLIC
-    ):
-        return Response(
-            {
-                "status": "error",
-                "message": "Vous n'êtes pas autorisé à voir cette galerie.",
-            },
-            status=403,
-        )
-    elif (
-        not request.user.is_staff
-        and not request.user.is_superuser
-        and gallery[0].visibility is Gallery.Visibility.PRIVATE
-    ):
-        return Response(
-            {
-                "status": "error",
-                "message": "Vous n'êtes pas autorisé à voir cette galerie.",
-            },
-            status=403,
-        )
-    else:
-        serializer = GallerySerializer(gallery[0])
-        return Response(serializer.data)
+    if not gallery.can_user_access(request.user):
+        return Response(FORBIDDEN_GALLERY, status=403)
+    return Response(GallerySerializer(gallery).data)
 
 
 @api_view(["POST"])
 def get_pics(request):
-    gallery = Gallery.objects.filter(slug=request.data["slug"])
-    if gallery.count() == 0:
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
         return Response(
             {"status": "error", "message": "Cette galerie n'existe pas."}, status=404
         )
-    # check if request user is allowed to see this gallery
-    if not request.user.is_authenticated and (
-        not gallery[0].visibility == Gallery.Visibility.PUBLIC
-    ):
-        return Response(
-            {
-                "status": "error",
-                "message": "Vous n'êtes pas autorisé à voir cette galerie.",
-            },
-            status=403,
-        )
-    elif (
-        not request.user.is_staff
-        and not request.user.is_superuser
-        and gallery[0].visibility is Gallery.Visibility.PRIVATE
-    ):
-        return Response(
-            {
-                "status": "error",
-                "message": "Vous n'êtes pas autorisé à voir cette galerie.",
-            },
-            status=403,
-        )
-    else:
-        files = File.objects.filter(gallery=gallery.first())
-        serializer = FileSerializer(files, many=True)
-        return Response(data=serializer.data)
+    if not gallery.can_user_access(request.user):
+        return Response(FORBIDDEN_GALLERY, status=403)
+    files = File.objects.filter(gallery=gallery)
+    return Response(data=FileSerializer(files, many=True).data)
 
 
 @api_view(["POST"])
