@@ -1,0 +1,139 @@
+import io
+import os
+import shutil
+import tempfile
+import zipfile
+from unittest import mock
+
+from api.models import File, Gallery, Year
+from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
+from galerie import loader
+from PIL import Image
+
+
+def jpeg(size=(60, 40)):
+    buffer = io.BytesIO()
+    Image.new("RGB", size, "teal").save(buffer, "JPEG")
+    return buffer.getvalue()
+
+
+def zip_of(files):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for name, content in files.items():
+            archive.writestr(name, content)
+    return buffer.getvalue()
+
+
+class ImportTest(TestCase):
+    def setUp(self):
+        self.media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.media)
+        settings = override_settings(MEDIA_ROOT=self.media)
+        settings.enable()
+        self.addCleanup(settings.disable)
+
+        self.gallery = Gallery.objects.create(
+            name="Sobriété",
+            slug="sobriete",
+            description="",
+            year=Year.objects.create(name="2026-2027"),
+        )
+        os.makedirs(self.path("uploads"))
+        os.makedirs(self.path("thumbnails"))
+        self.client.force_login(User.objects.create_superuser("admin"))
+
+    def path(self, *parts):
+        return os.path.join(self.media, "sobriete", *parts)
+
+    def upload(self, name, content):
+        patches = (
+            mock.patch("galerie.loader.generate_thumbnails.delay"),
+            mock.patch("galerie.loader.load_folder_into_gallery.delay"),
+        )
+        with patches[0] as thumbnails, patches[1] as load:
+            response = self.client.post(
+                "/gestion/gallery/sobriete",
+                {"zipfile": SimpleUploadedFile(name, content)},
+            )
+        return response, thumbnails, load
+
+    def zips_left(self):
+        return [name for name in os.listdir(self.media) if name.endswith(".zip")]
+
+    def test_zip_name_with_accents_spaces_and_parentheses(self):
+        archive = zip_of({"a.jpg": jpeg(), "b.jpg": jpeg()})
+        response, thumbnails, load = self.upload("sOBriété 2026 (1).zip", archive)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(sorted(os.listdir(self.path("uploads"))), ["a.jpg", "b.jpg"])
+        thumbnails.assert_called_once_with("sobriete")
+        load.assert_called_once_with("sobriete")
+        self.assertEqual(self.zips_left(), [])
+
+    def test_a_file_that_is_not_a_zip_is_refused_and_removed(self):
+        response, thumbnails, load = self.upload("photos.zip", b"not a zip")
+
+        self.assertEqual(response.status_code, 400)
+        thumbnails.assert_not_called()
+        load.assert_not_called()
+        self.assertEqual(self.zips_left(), [])
+
+    def test_unknown_gallery(self):
+        response = self.client.post(
+            "/gestion/gallery/nope",
+            {"zipfile": SimpleUploadedFile("a.zip", zip_of({"a.jpg": jpeg()}))},
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self.zips_left(), [])
+
+    def fill_uploads(self):
+        files = {
+            "a.jpg": jpeg(),
+            "B.JPG": jpeg((40, 60)),
+            "final.v2.png": jpeg(),
+            "broken.jpg": b"not a picture",
+            "no_extension": jpeg(),
+            "notes.txt": b"hello",
+            ".DS_Store": b"",
+            "._a.jpg": b"",
+        }
+        for name, content in files.items():
+            with open(self.path("uploads", name), "wb") as file:
+                file.write(content)
+        os.makedirs(self.path("uploads", "__MACOSX"))
+        os.makedirs(self.path("uploads", "folder.jpg"))
+
+    def test_only_pictures_are_registered_and_only_once(self):
+        self.fill_uploads()
+        loader.load_folder_into_gallery("sobriete")
+        loader.load_folder_into_gallery("sobriete")
+
+        rows = File.objects.filter(gallery=self.gallery).order_by("id")
+        self.assertEqual(
+            [(f.file_full_name, f.file_name, f.file_extension) for f in rows],
+            [
+                ("B.JPG", "B", "JPG"),
+                ("a.jpg", "a", "jpg"),
+                ("broken.jpg", "broken", "jpg"),
+                ("final.v2.png", "final.v2", "png"),
+            ],
+        )
+        self.assertEqual({f.link for f in rows}, {"/media/sobriete"})
+
+    def test_one_unreadable_picture_does_not_stop_the_thumbnails(self):
+        self.fill_uploads()
+        with self.assertLogs("galerie.loader", level="ERROR"):
+            loader.generate_thumbnails("sobriete")
+
+        self.assertEqual(
+            sorted(os.listdir(self.path("thumbnails"))),
+            ["B.JPG", "a.jpg", "final.v2.png"],
+        )
+
+    def test_gallery_deleted_before_the_worker_runs(self):
+        self.gallery.delete()
+        with self.assertLogs("galerie.loader", level="WARNING"):
+            loader.load_folder_into_gallery("sobriete")

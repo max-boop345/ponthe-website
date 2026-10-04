@@ -1,7 +1,10 @@
+import zipfile
+
 from api.models import Gallery
 from django.contrib.auth.decorators import user_passes_test
 from django.core.files.storage import FileSystemStorage
-from django.shortcuts import render
+from django.http import HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, render
 from galerie.loader import load_zip_into_gallery
 
 
@@ -13,14 +16,18 @@ def index_view(request):
 @user_passes_test(lambda u: u.is_superuser)
 def gallery_view(request, slug=""):
     context = {"slug": slug}
-    if request.method == "POST" and request.FILES["zipfile"]:
+    if request.method == "POST" and request.FILES.get("zipfile"):
+        gal = get_object_or_404(Gallery, slug=slug)
         file = request.FILES["zipfile"]
         fs = FileSystemStorage()
+        # Keep the name save() returns and ask the storage for its path. Going
+        # through fs.url() percent-encodes accents and spaces, and the encoded
+        # name is not a file on disk.
         filename = fs.save(file.name, file)
-        uploaded_file_url = fs.url(filename)
-
-        gal = Gallery.objects.get(slug=slug)
-        print(uploaded_file_url.split("/")[2])
-        load_zip_into_gallery(uploaded_file_url.split("/")[2], gal)
-        fs.delete(filename)
+        try:
+            load_zip_into_gallery(fs.path(filename), gal)
+        except zipfile.BadZipFile:
+            return HttpResponseBadRequest("Le fichier envoyé n'est pas un zip valide.")
+        finally:
+            fs.delete(filename)
     return render(request, "gestiongallery.html", context)
