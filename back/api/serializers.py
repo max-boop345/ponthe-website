@@ -1,24 +1,9 @@
 import random
 
-from api.models import File, Gallery, Material, Promo, Reaction, Student, Year
-from django.contrib.auth.models import User
+from api.models import File, Gallery, Material, Promo, Year
 from rest_framework import serializers
 
 random.seed()
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["email", "id"]
-
-
-class StudentSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-
-    class Meta:
-        model = Student
-        fields = ["id", "user", "promotion"]
 
 
 class GallerySerializer(serializers.ModelSerializer):
@@ -65,15 +50,6 @@ class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
         fields = ["name"]
-
-
-class ReactionSerializer(serializers.ModelSerializer):
-    student = StudentSerializer()
-    gallery = GallerySerializer()
-
-    class Meta:
-        model = Reaction
-        fields = ["gallery", "student"]
 
 
 class YearSerializer(serializers.ModelSerializer):

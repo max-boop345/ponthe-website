@@ -1,4 +1,3 @@
-from django.contrib.auth import models as models2
 from django.db import models
 from django.utils import timezone
 
@@ -10,12 +9,6 @@ class Year(models.Model):
 class Promo(models.Model):
     name = models.CharField(primary_key=True, max_length=10)
     first_year = models.ForeignKey(Year, on_delete=models.PROTECT)
-
-
-class Student(models.Model):
-    user = models.OneToOneField(models2.User(), on_delete=models.PROTECT)
-    promo = models.ForeignKey(Promo, on_delete=models.PROTECT)
-    # is_searching = models.BooleanField(default=False)
 
 
 # TODO: Create a year model ?
@@ -85,23 +78,5 @@ class File(models.Model):
         ]
 
 
-class Reaction(models.Model):
-    gallery = models.ForeignKey(Gallery, on_delete=models.CASCADE)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-
-
 class Material(models.Model):
     name = models.CharField(max_length=1000)
-
-
-class Face(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    file = models.ForeignKey(File, on_delete=models.CASCADE)
-
-
-"""
-class Teams(models.Model):
-    year = models.IntegerChoices(default=Student.Promotion.P25 ,choices=Student.Promotion.choices)
-    members = models.onTo
-
-"""

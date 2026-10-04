@@ -7,7 +7,6 @@ from api.views import (
     delete_gallery,
     delete_pic,
     generate_thumbnails,
-    get_associated_pictures,
     get_expositions,
     get_galleries,
     get_gallery,
@@ -34,7 +33,6 @@ urlpatterns = [
     path("gallery/change_visibility/", change_visibility),
     path("gallery/change_view/", change_view),
     path("years/", years),
-    path("associated_pics/", get_associated_pictures),
     path("expositions/", get_expositions),
     path("get_view", get_view, name="get_view"),
 ]

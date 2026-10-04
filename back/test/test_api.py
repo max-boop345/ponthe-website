@@ -114,6 +114,7 @@ class ManagementRoutesTest(TestCase):
         self.client.force_login(self.staff)
         self.assertEqual(self.client.get("/api/import/").status_code, 404)
         self.assertEqual(self.client.put("/api/gallery/upload/").status_code, 404)
+        self.assertEqual(self.client.get("/api/associated_pics/").status_code, 404)
 
     def test_visibility_must_be_a_known_value(self):
         self.client.force_login(self.staff)
@@ -188,10 +189,3 @@ class ApiDefaultsTest(TestCase):
         credentials = base64.b64encode(b"staff:secret").decode()
         response = self.client.get("/api/", HTTP_AUTHORIZATION=f"Basic {credentials}")
         self.assertEqual(response.status_code, 403)
-
-    def test_associated_pictures_require_a_login(self):
-        self.assertEqual(self.client.get("/api/associated_pics/").status_code, 403)
-        self.client.force_login(self.student)
-        response = self.client.get("/api/associated_pics/")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
