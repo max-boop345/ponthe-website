@@ -6,6 +6,10 @@ backups
 back/media
 back/galerie/static/react
 
+# secrets: only .env.example is tracked
+.env
+.env-prod
+
 # misc
 .DS_Store
 .env.local

@@ -16,12 +16,15 @@ La galerie se compose :
 
 Importer le repository git avec la commande :
 ```
-git clone git@github.com:adcrry/gallery-website.git
+git clone https://github.com/KIClubinfo/ponthe-website.git
 ```
 
-Configurer le .env avec les variables adéquates
+Créer le fichier `.env` à partir du modèle, puis le remplir :
+```
+cp .env.example .env
+```
 
-<ins>**NB :**</ins> Ne pas oublier de modifier la 'SECRET_KEY' ainsi que le mot de passe de la base de donnée 'DB_PASSWORD'
+<ins>**NB :**</ins> Le `.env` contient les secrets (`SECRET_KEY`, `DB_PASSWORD`, `REDIS_PASSWORD`) et n'est jamais commité. Générer des valeurs propres à chaque installation.
 
 Lancer l'ensemble des services de la galerie (back, db, webinstaller et nginx pour le déploiement en production) à l'aide de docker compose (et  pas docker-compose !) :
 ```
@@ -89,7 +92,8 @@ L'ensemble des containers, leurs connections entre eux et leurs données persist
 
 Les services en prod sont les suivants :
   - base de données avec PostgreSQL
-  - backend Django/Gunicorn/Redis/Celery
+  - backend Django/Gunicorn
+  - worker Celery (service à part, relancé automatiquement) et Redis
   - frontend ReactJS
   - gestionnaire de traffic NGINX
 
@@ -101,7 +105,7 @@ L'ensemble des variables d'environnement sont contenus dans le fichier ```.env``
 
 ### Intégration continue (CI)
 
-L'intégration continue est gérée par Github Actions. Lorsqu'un push est effectué sur la branche ```master```, l'ensemble des tests sont lancés. Si ceux-ci sont concluants, le commit est accepté.
+L'intégration continue est gérée par Github Actions (`.github/workflows/ci.yaml`). À chaque push sur ```master``` et à chaque pull request, trois tâches tournent : le lint (black, isort, flake8), les tests du backend sur un vrai PostgreSQL, et la compilation du frontend.
 
 Afin d'éviter d'être rejeté par les tests de lint, il est possible d'utiliser les pre-commit hooks. Ceux-ci permettent de lancer les tests localement avant de push. Pour cela, il est nécessaire d'installer pre-commit, puis de lancer la commande suivante :
 ```
