@@ -46,6 +46,14 @@ OU
 docker compose -f docker-compose-prod.yaml build
 docker compose -f docker-compose-prod.yaml start
 ```
+### Mise à jour de la production
+
+Sur le serveur, une fois les changements fusionnés dans ```master``` :
+```
+scripts/deploy.sh
+```
+Le script récupère ```master```, construit les images et le frontend pendant que le site tourne, sauvegarde la base dans ```backups/```, puis remplace les conteneurs. La coupure se limite au redémarrage du backend.
+
 ### Problèmes de déploiement
 
 Lors du lancement des commandes précédentes, il est possible que dans certains cas, le serveur ne démarre pas.
