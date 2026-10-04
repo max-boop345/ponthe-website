@@ -55,7 +55,7 @@ services:
       TRUSTED_ORIGIN: ${TRUSTED_ORIGIN}
     restart: always
     volumes:
-      - bundles:/src/upont/static/react
+      - bundles:/src/galerie/static/react
       - static_volume:/src/static
       - ./back/media:/src/media
       - ./backups:/backups
