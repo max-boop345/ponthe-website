@@ -44,3 +44,7 @@ class TestPages(TestCase):
                 self.assertTrue(page.lstrip().startswith("<!DOCTYPE html>"))
                 self.assertEqual(page.count("<head>"), 1)
                 self.assertIn('<meta name="viewport"', page)
+
+    def test_bundle_url_changes_with_each_build(self):
+        page = self.client.get("/gallery/gala").content.decode()
+        self.assertRegex(page, r'src="/static/react/gallery\.bundle\.js\?v=\d+"')

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static bundles %}
 {% include "head.html" %}
 {% csrf_token %}
 <body>
@@ -25,7 +25,7 @@
             error = false
         {% endif %}
     </script>
-    <script src="{% static 'react/login.bundle.js' %}"></script>
+    <script src="{% bundle 'login' %}"></script>
 
 </body><!--End of Body-->
 

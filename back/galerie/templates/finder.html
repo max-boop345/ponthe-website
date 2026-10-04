@@ -1,4 +1,4 @@
-{% load static %}
+{% load static bundles %}
 {% include "head.html" %}
 <body>
     <!--Header-->
@@ -19,7 +19,7 @@
     <script>
         window.react_mount = document.getElementById('Basic');
     </script>
-    <script src="{% static 'react/finder.bundle.js' %}"></script>
+    <script src="{% bundle 'finder' %}"></script>
 
 </body><!--End of Body-->
 

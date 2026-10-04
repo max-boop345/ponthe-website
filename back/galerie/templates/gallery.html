@@ -1,4 +1,4 @@
-{% load static %}
+{% load static bundles %}
 {% include "head.html" %}
 <body>
     <!--Header-->
@@ -21,7 +21,7 @@
         gallery_slug = '{{slug}}';
         is_logged = true;
     </script>
-    <script src="{% static 'react/gallery.bundle.js' %}"></script>
+    <script src="{% bundle 'gallery' %}"></script>
 
 </body><!--End of Body-->
 

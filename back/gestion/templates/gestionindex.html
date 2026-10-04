@@ -1,4 +1,4 @@
-{% load static %}
+{% load static bundles %}
 {% include "head.html" %}
 <body>
     {% include 'header.html' %}
@@ -17,7 +17,7 @@
     <script>
         window.react_mount = document.getElementById('Basic');
     </script>
-    <script src="{% static 'react/gestiongalleries.bundle.js' %}"></script>
+    <script src="{% bundle 'gestiongalleries' %}"></script>
 
 </body><!--End of Body-->
 
