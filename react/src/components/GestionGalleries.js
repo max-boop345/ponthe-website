@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import './../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Cookies from 'js-cookie';
 import GalleryLink from './GalleryLink';
@@ -104,9 +105,11 @@ export default function Gallery(){
             <span className='centered-button'><AddCircleOutlineIcon className="add-icon" onClick={openModal}/></span>
           </Stack>
         </div>
-        <Row className='g-1'>
-            {galleriesComp}
-        </Row>
+        <Container fluid>
+          <Row className='g-1'>
+              {galleriesComp}
+          </Row>
+        </Container>
         {addModalState && (
           <div className='pic-modal'>
             <div ref={ref} className='add-modal-content'>

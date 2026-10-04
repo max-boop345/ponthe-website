@@ -75,7 +75,7 @@ const PictureMosaic = (props) => {
         for (const pic in props.result) {
             picsTemp.push(props.result[pic].link + '/uploads/' + props.result[pic].file_full_name)
             picsDiv.push(
-                <Col key={pic} xs="12" sm="6" md="4" lg="2">
+                <Col key={pic} xs="4" sm="3" lg="2">
                     <GallerySticker img={props.result[pic].link + '/uploads/' + props.result[pic].file_full_name}
                         thumb={props.result[pic].link + '/thumbnails/' + props.result[pic].file_full_name}
                         modal_func={toggleModal} />

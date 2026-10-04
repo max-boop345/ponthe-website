@@ -6,7 +6,7 @@ import Col from 'react-bootstrap/Col';
 const GalleryLink = (props) => {
     return(
         <>
-          <Col xs="12" sm="6" md="4" lg="3">
+          <Col xs="6" md="4" lg="3">
           <div className='img-foreground'>
               <a href={props.link}>
                 <img className='galleries-img' src={props.sticker} width="100%"/>

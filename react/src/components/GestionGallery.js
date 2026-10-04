@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import './../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -121,7 +122,7 @@ export default function Gallery({props}){
           for(const pic in result){
             picsTemp.push(result[pic].link + '/uploads/' + result[pic].file_full_name)
             picsDiv.push(
-            <Col key={pic} xs="12" sm="6" md="4" lg="2">
+            <Col key={pic} xs="4" sm="3" lg="2">
               <GallerySticker img={result[pic].link + '/uploads/' + result[pic].file_full_name}
                               thumb={result[pic].link + '/thumbnails/' + result[pic].file_full_name}
                               modal_func={toggleModal}/>
@@ -245,9 +246,11 @@ export default function Gallery({props}){
               </span>
           </Stack>
         </div>
-        <Row className='g-1'>
-          {picsList}
-        </Row>
+        <Container fluid>
+          <Row className='g-1'>
+            {picsList}
+          </Row>
+        </Container>
 
         {state && (
           <div className='pic-modal'>
