@@ -21,7 +21,9 @@ def cas_login():
 class CASBackendTest(TestCase):
     def test_known_username(self):
         account = User.objects.create_user("j.dupont", first_name="Jeanne")
-        with cas_answers("j.dupont", mail="j.dupont@enpc.fr", givenName="J", sn="Dupont"):
+        with cas_answers(
+            "j.dupont", mail="j.dupont@enpc.fr", givenName="J", sn="Dupont"
+        ):
             user = cas_login()
 
         self.assertEqual(user, account)
@@ -55,7 +57,9 @@ class CASBackendTest(TestCase):
         self.assertEqual(User.objects.count(), 3)
 
     def test_unknown_person_gets_an_account(self):
-        with cas_answers("j.dupont", mail=["j.dupont@enpc.fr", "other@enpc.fr"], sn="Dupont"):
+        with cas_answers(
+            "j.dupont", mail=["j.dupont@enpc.fr", "other@enpc.fr"], sn="Dupont"
+        ):
             user = cas_login()
 
         self.assertEqual(
@@ -120,5 +124,7 @@ class EmailBackendTest(TestCase):
         User.objects.create_user("one", email="shared@enpc.fr", password="first")
         two = User.objects.create_user("two", email="shared@enpc.fr", password="second")
 
-        self.assertEqual(authenticate(username="Shared@enpc.fr", password="second"), two)
+        self.assertEqual(
+            authenticate(username="Shared@enpc.fr", password="second"), two
+        )
         self.assertIsNone(authenticate(username="shared@enpc.fr", password="wrong"))

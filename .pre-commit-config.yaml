@@ -1,16 +1,16 @@
 repos:
-  - repo: https://github.com/ambv/black
-    rev: 22.3.0
+  # black, isort and flake8: keep these versions in step with .github/workflows/ci.yaml
+  - repo: https://github.com/psf/black
+    rev: 26.10.0
     hooks:
       - id: black
-        additional_dependencies: ['click<8.1.0']
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 9.0.2
     hooks:
       - id: isort
         args: ['--profile', 'black']
   - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+    rev: 7.4.1
     hooks:
       - id: flake8
         args:

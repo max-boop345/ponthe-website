@@ -296,4 +296,3 @@ def get_associated_pictures(request):
     for face in Face.objects.filter(student=student):
         files.append(face.file)
     return Response(FileSerializer(files, many=True).data)
-

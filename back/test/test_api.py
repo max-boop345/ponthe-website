@@ -83,7 +83,9 @@ class GalleryAccessTest(TestCase):
     def test_unknown_gallery(self):
         self.client.force_login(self.users["superuser"])
         for url in ("/api/gallery/", "/api/gallery/pics/"):
-            self.assertEqual(post_json(self.client, url, {"slug": "nope"}).status_code, 404)
+            self.assertEqual(
+                post_json(self.client, url, {"slug": "nope"}).status_code, 404
+            )
             self.assertEqual(post_json(self.client, url, {}).status_code, 404)
         self.assertEqual(self.client.get("/media/nope/uploads/a.jpg").status_code, 403)
 
@@ -134,12 +136,16 @@ class ManagementRoutesTest(TestCase):
         for url, task in routes.items():
             with self.subTest(url=url), mock.patch(task) as delay:
                 self.client.force_login(self.student)
-                self.assertEqual(post_json(self.client, url, {"slug": "gala"}).status_code, 403)
+                self.assertEqual(
+                    post_json(self.client, url, {"slug": "gala"}).status_code, 403
+                )
 
                 self.client.force_login(self.staff)
                 response = post_json(self.client, url, {"slug": "../../etc"})
                 self.assertEqual(response.status_code, 404)
                 delay.assert_not_called()
 
-                self.assertEqual(post_json(self.client, url, {"slug": "gala"}).status_code, 200)
+                self.assertEqual(
+                    post_json(self.client, url, {"slug": "gala"}).status_code, 200
+                )
                 delay.assert_called_once_with("gala")

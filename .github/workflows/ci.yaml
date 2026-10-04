@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install linters
+        # Same versions as .pre-commit-config.yaml: a newer black reformats.
+        run: pip install black==26.10.0 isort==9.0.2 flake8==7.4.1
+      - name: Lint
+        run: |
+          black . --check
+          isort . --profile black --check-only
+          flake8 . --config .github/linters/.flake8
+
+  back:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The code has already behaved differently in the two modes.
+        debug: ["False", "True"]
+    services:
+      db:
+        image: postgres:13.12-bookworm
+        env:
+          POSTGRES_DB: ponthe
+          POSTGRES_USER: ponthe
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ponthe"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DEBUG: ${{ matrix.debug }}
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: ponthe
+      DB_USER: ponthe
+      DB_PASSWORD: ci
+      # Nothing in the tests talks to Redis: tasks are mocked, the cache is local.
+      REDIS_HOST: localhost
+      REDIS_PASSWORD: ci
+      SECRET_KEY: ci-only-not-a-secret
+      DOMAIN_NAME: localhost
+      SECURE_SSL_REDIRECT: "False"
+      TRUSTED_ORIGIN: https://localhost
+    defaults:
+      run:
+        working-directory: back
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.6"
+      - name: Install dependencies
+        run: |
+          pip install poetry==1.6.1
+          poetry install --no-root
+      - name: Migrations are up to date
+        run: poetry run python manage.py makemigrations --check --dry-run
+      - name: Tests
+        run: poetry run python manage.py test
+
+  front:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Same major version as webinstaller/Dockerfile.
+          node-version: "17"
+      - run: npm ci
+      - name: Build the bundles
+        run: npx webpack --mode production --output-path "$RUNNER_TEMP/bundles"
