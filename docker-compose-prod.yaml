@@ -123,6 +123,9 @@ services:
       context: .
       dockerfile: ./webinstaller/Dockerfile
       target: production
+    # It only needs to reach the npm registry: Docker's own bridge will do, and
+    # the project then has no `default` network to create.
+    network_mode: bridge
     volumes:
       - bundles:/react
 
