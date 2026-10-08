@@ -64,6 +64,18 @@ def gallery_view(request, slug=""):
             return _upload_error(
                 wants_json, "Le fichier envoyé n'est pas un zip valide."
             )
+        except Exception:
+            # Unexpected error (disk full, Celery broker, ...): keep the
+            # JSON contract for AJAX requests.
+            if wants_json:
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": "Une erreur est survenue lors de l'envoi.",
+                    },
+                    status=500,
+                )
+            raise
         finally:
             fs.delete(filename)
 
