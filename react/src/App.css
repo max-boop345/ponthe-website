@@ -613,12 +613,12 @@ body{
    grand, posé aux deux-tiers entre le titre (centré) et le bord droit. */
 .select-toggle-icon{
   position: absolute;
-  top: 45px;
+  top: 36px;
   left: 83%;
   transform: translateX(-50%);
   cursor: pointer;
   color: var(--ponthe-blue);
-  font-size: 3rem;
+  font-size: clamp(48px, 7vw, 80px);
   transition: color 0.2s ease;
 }
 
