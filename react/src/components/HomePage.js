@@ -1,46 +1,69 @@
 import React from 'react'
 import CustomNavbar from './Navbar'
 import KeyboardDoubleArrowDownIcon from '@mui/icons-material/KeyboardDoubleArrowDown';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import './../App.css';
 
 export default function HomePage (){
 
-
-
     return (
         <>
             <CustomNavbar/>
-            <div className="main-intro-div">
-                <a className="big-button" href="/galleries">Accéder aux galeries</a>
-                <a className="big-button ytb-btn" href="https://www.youtube.com/@ponthe-ecoledesponts7542">Voir notre chaine Youtube</a>
-                <a name="team"></a>
-                <span className="team-down"><KeyboardDoubleArrowDownIcon/>Ponthé 028<KeyboardDoubleArrowDownIcon/></span>
-            </div>
-            <Container fluid>
-                <Row>
-                    <Col xs="12" sm="6" md="8" lg="8">
-                        <img className="img-team" src="/static/assets/img/028_group.jpg"/>
-                    </Col>
-                    <Col xs="12" sm="6" md="4" lg="4">
-                        <div className="team-desc">
-                            <h2>L'équipe</h2>
-                            <p>Présidente : Alice Dubreux</p>
-                            <p>V-Prez Photo : Romain Soulabail</p>
-                            <p>V-Prez Vidéo : Louis Cussoneau</p>
-                            <p>Trez : Émilie Duccini</p>
-                            <p>Respo Matos : Paul Lemeunier</p>
-                            <p>Respo Galeries : Maxime Novo-Frelicot</p>
-                            <p>Respo Comm : Vincent Huynh</p>
-                            <p>Vidéastes : Océane Chia, Louis Laverrière, Clovis Vialard, Sophie Balmitgère</p>
-                            <p>Photographes : Maxime Préel, Pétronille Sylvestre, Juliette Houriez, Mathilde David, Sélène Baudoux, Saül Buchwald, Lucie Agnese, Maxence Brechon</p>
+            <main>
+                <section className="hero-section">
+                    <div className="hero-content">
+                        <div className="poster-title-container">
+                            <div className="badge-hero-yellow">028</div>
+                            <h1 className="poster-title">PONTHÉ</h1>
+                            <div className="poster-title-outline" aria-hidden="true">PONTHÉ</div>
                         </div>
-                    </Col>
-                </Row>
+                        <p className="hero-subtitle">Club photo &amp; vidéo de l'École des Ponts</p>
+                        <div className="hero-pills">
+                            <a className="pill-btn pill-yellow" href="/galleries">Accéder aux galeries</a>
+                            <a className="pill-btn pill-white" href="https://www.youtube.com/@ponthe-ecoledesponts7542">Chaîne Youtube</a>
+                        </div>
+                        <a className="scroll-chevron" href="#team" aria-label="Voir l'équipe">
+                            <KeyboardDoubleArrowDownIcon/>
+                        </a>
+                    </div>
+                </section>
 
-            </Container>
+                <a name="team"></a>
+                <section className="team-section">
+                    <div className="team-section-inner">
+                        <img className="team-img-rounded" src="/static/assets/img/028_group.jpg" alt="L'équipe Ponthé 028"/>
+                        <h2 className="team-section-title">L'équipe</h2>
+                        <div className="roster-grid">
+                            <div className="roster-column">
+                                <h3 className="roster-group-title">Le Bureau</h3>
+                                <div className="roster-card-item">
+                                    <p><strong>Présidente :</strong> Alice Dubreux</p>
+                                    <p><strong>V-Prez Photo :</strong> Romain Soulabail</p>
+                                    <p><strong>V-Prez Vidéo :</strong> Louis Cussoneau</p>
+                                    <p><strong>Trez :</strong> Émilie Duccini</p>
+                                </div>
+                                <h3 className="roster-group-title">Responsables</h3>
+                                <div className="roster-card-item">
+                                    <p><strong>Respo Matos :</strong> Paul Lemeunier</p>
+                                    <p><strong>Respo Galeries :</strong> Maxime Novo-Frelicot</p>
+                                    <p><strong>Respo Comm :</strong> Vincent Huynh</p>
+                                </div>
+                            </div>
+                            <div className="roster-column">
+                                <h3 className="roster-group-title">Pôle Création</h3>
+                                <div className="roster-card-item">
+                                    <p className="roster-subtitle">Vidéastes</p>
+                                    <p className="roster-names">Océane Chia, Louis Laverrière, Clovis Vialard, Sophie Balmitgère</p>
+                                    <p className="roster-subtitle">Photographes</p>
+                                    <p className="roster-names">Maxime Préel, Pétronille Sylvestre, Juliette Houriez, Mathilde David, Sélène Baudoux, Saül Buchwald, Lucie Agnese, Maxence Brechon</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            <footer className="site-footer">
+                <p>© 2026 Club Ponthé — École des Ponts ParisTech</p>
+            </footer>
         </>
     )
 }

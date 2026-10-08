@@ -58,6 +58,7 @@ export default function Galleries(props) {
               {years.map(y => (
                 <button key={y} type="button"
                   className={'year-pill' + (y === year ? ' active' : '')}
+                  aria-pressed={y === year}
                   onClick={() => setYear(y)}>
                   {y}
                 </button>

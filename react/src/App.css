@@ -752,3 +752,262 @@ body{
     padding-bottom: 0;
   }
 }
+
+/* ===== Accueil « Hero osé sans voile » (draft 6376c5fd) ===== */
+
+.hero-section{
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+  padding: 120px 16px 48px;
+  background-image:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 60%, rgba(0, 0, 0, 0.75) 100%),
+    url('/static/assets/img/028_group.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-content{
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.poster-title-container{
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.poster-title{
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: clamp(56px, 12vw, 120px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: white;
+  margin: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.poster-title-outline{
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: clamp(56px, 12vw, 120px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--ponthe-yellow);
+  z-index: 5;
+  user-select: none;
+  pointer-events: none;
+}
+
+.badge-hero-yellow{
+  position: absolute;
+  right: -40px;
+  top: -10px;
+  z-index: 20;
+  background-color: var(--ponthe-yellow);
+  color: black;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.hero-subtitle{
+  color: white;
+  font-family: 'Inter';
+  font-size: clamp(16px, 2.5vw, 24px);
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  margin: 0 0 48px;
+}
+
+.hero-pills{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.pill-btn{
+  text-transform: uppercase;
+  padding: 20px 40px;
+  font-family: 'Inter';
+  font-weight: 700;
+  font-size: 20px;
+  border-radius: 50px;
+  border: 2px solid transparent;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.pill-yellow{
+  background-color: var(--ponthe-yellow);
+  color: black;
+}
+
+.pill-yellow:hover,
+.pill-yellow:focus{
+  background-color: white;
+  color: black;
+}
+
+.pill-white{
+  background-color: white;
+  color: black;
+}
+
+.pill-white:hover,
+.pill-white:focus{
+  background-color: var(--ponthe-yellow);
+  color: black;
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+
+.scroll-chevron{
+  color: var(--ponthe-yellow);
+  font-size: 3rem;
+  margin-top: 32px;
+  animation: bounce-slow 2s infinite;
+}
+
+.team-section{
+  background: white;
+  overflow: hidden;
+  padding: 96px 16px 0;
+}
+
+.team-section-inner{
+  max-width: 1152px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.team-img-rounded{
+  border-radius: 24px;
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  transform: rotate(-1deg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  margin-bottom: 80px;
+}
+
+.team-section-title{
+  text-align: center;
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: clamp(32px, 5vw, 48px);
+  color: var(--ponthe-blue);
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  margin: 0 0 64px;
+}
+
+.roster-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  padding-bottom: 96px;
+}
+
+@media screen and (min-width: 768px) {
+  .roster-grid{
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.roster-column{
+  display: flex;
+  flex-direction: column;
+}
+
+.roster-group-title{
+  font-family: 'Inter';
+  font-size: 12px;
+  font-weight: 700;
+  color: #9e9e9e;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin: 0 0 16px;
+}
+
+.roster-group-title:not(:first-child){
+  margin-top: 48px;
+}
+
+.roster-card-item{
+  border: 1px solid var(--ponthe-gray-border);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.roster-card-item:hover{
+  border-color: var(--ponthe-blue);
+  box-shadow: 0 4px 12px rgba(129, 147, 242, 0.1);
+}
+
+.roster-card-item p{
+  margin: 0 0 8px;
+}
+
+.roster-card-item p:last-child{
+  margin-bottom: 0;
+}
+
+.roster-card-item strong{
+  color: #212529;
+}
+
+.roster-subtitle{
+  font-weight: 700;
+  font-size: 18px;
+  color: #212529;
+}
+
+.roster-names{
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.site-footer{
+  background: white;
+  padding: 48px 16px;
+  text-align: center;
+  color: #9e9e9e;
+  font-size: 14px;
+  border-top: 1px solid #f1f1f1;
+}
+
+@media screen and (max-width: 575px) {
+  .badge-hero-yellow{
+    right: 0;
+    font-size: 18px;
+  }
+
+  .pill-btn{
+    padding: 16px 28px;
+    font-size: 16px;
+  }
+}
