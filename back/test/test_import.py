@@ -183,7 +183,9 @@ class UploadErrorMessagesTest(UploadTestCase):
 
     def test_ajax_wrong_extension_returns_json_error(self):
         archive = zip_of({"a.jpg": jpeg()})
-        response, thumbnails, load = self.upload_ajax("photos.txt", archive, "text/plain")
+        response, thumbnails, load = self.upload_ajax(
+            "photos.txt", archive, "text/plain"
+        )
 
         self.assertEqual(response.status_code, 400)
         data = response.json()

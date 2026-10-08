@@ -1,8 +1,7 @@
+from api.models import File, Gallery, Report, Year
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.test import TestCase
-
-from api.models import File, Gallery, Report, Year
 
 from .test_api import post_json
 
@@ -73,14 +72,19 @@ class ReportApiTest(TestCase):
         cls.other_student = User.objects.create_user("other_student")
         cls.manager = User.objects.create_user("manager", is_staff=True)
 
-    def report(self, slug="public", file_full_name="picture.jpg",
-               category="autre", message=""):
-        return post_json(self.client, "/api/gallery/pics/report/", {
-            "slug": slug,
-            "file_full_name": file_full_name,
-            "category": category,
-            "message": message,
-        })
+    def report(
+        self, slug="public", file_full_name="picture.jpg", category="autre", message=""
+    ):
+        return post_json(
+            self.client,
+            "/api/gallery/pics/report/",
+            {
+                "slug": slug,
+                "file_full_name": file_full_name,
+                "category": category,
+                "message": message,
+            },
+        )
 
     def test_anonymous_cannot_report(self):
         response = self.report()
@@ -227,11 +231,11 @@ class ReportsListApiTest(TestCase):
         self.assertEqual(response.data[1]["message"], "problème")
         self.assertIn("created_at", response.data[1])
         # Les signalements des autres galeries ne doivent pas fuiter.
-        self.assertEqual(
-            {r["file_full_name"] for r in response.data}, {"picture.jpg"}
-        )
+        self.assertEqual({r["file_full_name"] for r in response.data}, {"picture.jpg"})
 
     def test_unknown_gallery_returns_404(self):
         self.client.force_login(self.manager)
-        response = post_json(self.client, "/api/gallery/reports/", {"slug": "nulle-part"})
+        response = post_json(
+            self.client, "/api/gallery/reports/", {"slug": "nulle-part"}
+        )
         self.assertEqual(response.status_code, 404)

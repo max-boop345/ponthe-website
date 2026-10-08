@@ -43,9 +43,7 @@ def gallery_view(request, slug=""):
         if file.size == 0:
             return _upload_error(wants_json, "Le fichier envoyé est vide.")
         if not file.name.lower().endswith(".zip"):
-            return _upload_error(
-                wants_json, "Le fichier doit être une archive .zip."
-            )
+            return _upload_error(wants_json, "Le fichier doit être une archive .zip.")
         if file.size > MAX_UPLOAD_SIZE:
             return _upload_error(
                 wants_json,

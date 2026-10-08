@@ -86,6 +86,7 @@ class Material(models.Model):
 
 class Report(models.Model):
     """Un signalement de photo par un utilisateur connecté."""
+
     id = models.AutoField(primary_key=True)
     file = models.ForeignKey(File, on_delete=models.CASCADE)
     reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

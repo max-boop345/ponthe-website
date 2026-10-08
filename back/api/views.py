@@ -394,9 +394,7 @@ def report_pic(request):
         )
     message = request.data.get("message", "")
     if not isinstance(message, str) or len(message) > 1000:
-        return Response(
-            {"status": "error", "message": "Message invalide."}, status=400
-        )
+        return Response({"status": "error", "message": "Message invalide."}, status=400)
     try:
         report = Report.objects.create(
             file=file,
