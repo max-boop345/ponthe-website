@@ -16,6 +16,7 @@ import CustomNavbar from './Navbar';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import {Stack, Select, MenuItem} from '@mui/material';
 
 export default function Gallery({props}){
@@ -36,6 +37,9 @@ export default function Gallery({props}){
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isCompact, setIsCompact] = useState(false);
+    // Mode sélection multiple
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selected, setSelected] = useState(new Set());
 
     const requestOptions = {
       method: 'POST',
@@ -114,6 +118,84 @@ export default function Gallery({props}){
 
     const toggleCompact = () => {
       setIsCompact(prev => !prev);
+    }
+
+    //Enter/leave the multi-selection mode; leaving clears the selection
+    const toggleSelectionMode = () => {
+      setSelectionMode(prev => !prev);
+      setSelected(new Set());
+    }
+
+    //Add/remove one picture from the selection
+    const toggleSelect = (fileFullName) => {
+      setSelected(prev => {
+        const next = new Set(prev);
+        if (next.has(fileFullName)) {
+          next.delete(fileFullName);
+        } else {
+          next.add(fileFullName);
+        }
+        return next;
+      });
+    }
+
+    //Download the selection as a single zip built by the backend
+    const downloadSelected = async () => {
+      if (selected.size === 0) return;
+      const downloadOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': Cookies.get('csrftoken') },
+        body: JSON.stringify({ slug: gallery_slug, file_full_names: Array.from(selected) })
+      };
+      try {
+        const response = await fetch('/api/gallery/pics/download/', downloadOptions);
+        if (!response.ok) {
+          alert('Impossible de télécharger les photos sélectionnées.');
+          return;
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = gallery_slug + '-selection.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.log(err);
+        alert('Erreur réseau : impossible de contacter le serveur.');
+      }
+    }
+
+    //Delete every selected picture after a confirmation
+    const deleteSelected = () => {
+      if (selected.size === 0) return;
+      if (!window.confirm('Supprimer ' + selected.size + ' photo(s) ?')) return;
+      const deleteOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': Cookies.get('csrftoken') },
+        body: JSON.stringify({ slug: gallery_slug, file_full_names: Array.from(selected) })
+      };
+      fetch('/api/gallery/pics/delete_many/', deleteOptions)
+            .then(res => res.json())
+            .then(
+              (result) => {
+                if (result.status === 'error') {
+                  alert(result.message)
+                  return
+                }
+                window.location.reload(false)
+              },
+              (error) => {
+                console.log(error)
+                alert('Impossible de supprimer les photos sélectionnées.')
+              }
+            );
     }
 
     //Goto next picture in modal
@@ -306,6 +388,8 @@ export default function Gallery({props}){
               <AddCircleOutlineIcon className="icon" onClick={openAddModal}/>
               <DeleteIcon onClick={deleteGallery} className="icon"/>
               <FlagIcon onClick={loadReports} className="icon" titleAccess="Signalements"/>
+              <ChecklistIcon className="icon" onClick={toggleSelectionMode}
+                titleAccess={selectionMode ? 'Quitter le mode sélection' : 'Sélectionner des photos'}/>
               {isCompact
                 ? <ZoomInIcon className="icon" onClick={toggleCompact} titleAccess="Vue normale"/>
                 : <ZoomOutIcon className="icon" onClick={toggleCompact} titleAccess="Vue dézoomée"/>
@@ -329,6 +413,19 @@ export default function Gallery({props}){
                 </Select>
               </span>
           </Stack>
+        {selectionMode && (
+          <div className="selection-bar">
+            <span>{selected.size} photo(s) sélectionnée(s)</span>
+            <button type="button" className="login-button" onClick={downloadSelected}
+              disabled={selected.size === 0}>
+              Télécharger la sélection
+            </button>
+            <button type="button" className="login-button" onClick={deleteSelected}
+              disabled={selected.size === 0}>
+              Supprimer la sélection
+            </button>
+          </div>
+        )}
         </div>
         <Container fluid>
           <Row className='g-1'>
@@ -337,7 +434,11 @@ export default function Gallery({props}){
                 <GallerySticker img={pic.link + '/uploads/' + pic.file_full_name}
                                 thumb={pic.link + '/thumbnails/' + pic.file_full_name}
                                 modal_func={toggleModal}
-                                compact={isCompact}/>
+                                compact={isCompact}
+                                selectionMode={selectionMode}
+                                selected={selected.has(pic.file_full_name)}
+                                onToggleSelect={toggleSelect}
+                                fileFullName={pic.file_full_name}/>
               </Col>
             ))}
           </Row>

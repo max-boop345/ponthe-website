@@ -21,9 +21,15 @@ jest.mock('./GallerySticker', () => {
       <div
         data-testid="gallery-sticker"
         data-compact={props.compact ? 'true' : 'false'}
+        data-selection-mode={props.selectionMode ? 'true' : 'false'}
+        data-selected={props.selected ? 'true' : 'false'}
         data-img={props.img}
         data-thumb={props.thumb}
-        onClick={(e) => props.modal_func(e, props.img)}
+        onClick={(e) =>
+          props.selectionMode
+            ? props.onToggleSelect(props.fileFullName)
+            : props.modal_func(e, props.img)
+        }
       >
         sticker
       </div>
@@ -66,11 +72,27 @@ const mockGalleryResponse = {
   view: 'galerie',
 };
 
+const mockReportsResponse = [
+  {
+    id: 1,
+    file_full_name: 'photo1.jpg',
+    reporter_name: 'student',
+    category: 'autre',
+    message: '',
+    created_at: '2026-10-01T12:00:00Z',
+  },
+];
+
 function mockFetch() {
   global.fetch = jest.fn((url) => {
     if (url.includes('/api/gallery/pics/')) {
       return Promise.resolve({
         json: () => Promise.resolve(mockPicsResponse),
+      });
+    }
+    if (url.includes('/api/gallery/reports/')) {
+      return Promise.resolve({
+        json: () => Promise.resolve(mockReportsResponse),
       });
     }
     if (url.includes('/api/gallery/')) {
@@ -419,7 +441,7 @@ describe('GestionGallery', () => {
     fireEvent.click(screen.getByText("Lancer l'envoi"));
 
     await waitFor(() => {
-      expect(screen.getByText(/sélectionn/i)).toBeInTheDocument();
+      expect(screen.getByText('Veuillez sélectionner un fichier .zip.')).toBeInTheDocument();
     });
   });
 
@@ -563,7 +585,7 @@ describe('GestionGallery', () => {
     // Submitting without a new selection asks for a file
     fireEvent.click(screen.getByText("Lancer l'envoi"));
     await waitFor(() => {
-      expect(screen.getByText(/sélectionn/i)).toBeInTheDocument();
+      expect(screen.getByText('Veuillez sélectionner un fichier .zip.')).toBeInTheDocument();
     });
   });
 
@@ -614,6 +636,157 @@ describe('GestionGallery', () => {
     const path = require('path');
     const css = fs.readFileSync(path.join(__dirname, '..', 'App.css'), 'utf8');
     expect(css).toMatch(/\.upload-error\s*\{/);
+  });
+
+  // --- Sélection multiple ---
+
+  test('the select button toggles selection mode on stickers', async () => {
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    const stickers = screen.getAllByTestId('gallery-sticker');
+    expect(stickers[0].getAttribute('data-selection-mode')).toBe('false');
+
+    fireEvent.click(screen.getByTestId('ChecklistIcon'));
+    const stickersAfter = screen.getAllByTestId('gallery-sticker');
+    expect(stickersAfter[0].getAttribute('data-selection-mode')).toBe('true');
+    expect(screen.getByText('Télécharger la sélection')).toBeInTheDocument();
+    expect(screen.getByText('Supprimer la sélection')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('ChecklistIcon'));
+    const stickersNormal = screen.getAllByTestId('gallery-sticker');
+    expect(stickersNormal[0].getAttribute('data-selection-mode')).toBe('false');
+    expect(screen.queryByText('Télécharger la sélection')).not.toBeInTheDocument();
+  });
+
+  test('clicking stickers in selection mode selects them and updates the counter', async () => {
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByTestId('ChecklistIcon'));
+    expect(screen.getByText('0 photo(s) sélectionnée(s)')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByTestId('gallery-sticker')[0]);
+    await waitFor(() => {
+      expect(screen.getByText('1 photo(s) sélectionnée(s)')).toBeInTheDocument();
+    });
+    expect(screen.getAllByTestId('gallery-sticker')[0].getAttribute('data-selected')).toBe('true');
+
+    fireEvent.click(screen.getAllByTestId('gallery-sticker')[0]);
+    await waitFor(() => {
+      expect(screen.getByText('0 photo(s) sélectionnée(s)')).toBeInTheDocument();
+    });
+  });
+
+  test('downloading the selection calls the download API with the selected names', async () => {
+    URL.createObjectURL = jest.fn(() => 'blob:fake');
+    URL.revokeObjectURL = jest.fn();
+
+    // Le download doit réussir : fetch complet avec ok + blob (mockFetch par défaut ne le fournit pas)
+    global.fetch = jest.fn((url) => {
+      if (url === '/api/gallery/pics/download/') {
+        return Promise.resolve({
+          ok: true,
+          blob: () => Promise.resolve(new Blob(['zip'])),
+        });
+      }
+      if (url.includes('/api/gallery/pics/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
+      }
+      if (url.includes('/api/gallery/reports/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockReportsResponse) });
+      }
+      if (url.includes('/api/gallery/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) });
+    });
+
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByTestId('ChecklistIcon'));
+    fireEvent.click(screen.getAllByTestId('gallery-sticker')[0]);
+    fireEvent.click(screen.getAllByTestId('gallery-sticker')[1]);
+    await waitFor(() => {
+      expect(screen.getByText('2 photo(s) sélectionnée(s)')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Télécharger la sélection'));
+    await waitFor(() => {
+      const [url, options] = global.fetch.mock.calls.find(
+        ([u]) => u === '/api/gallery/pics/download/'
+      );
+      expect(url).toBe('/api/gallery/pics/download/');
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body)).toEqual({
+        slug: 'test-gallery',
+        file_full_names: ['photo1.jpg', 'photo2.jpg'],
+      });
+    });
+  });
+
+  test('deleting the selection asks for confirmation and calls the delete API', async () => {
+    window.confirm = jest.fn(() => true);
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { ...originalLocation, reload: jest.fn() };
+
+    try {
+      render(<GestionGallery />);
+      await waitFor(() => {
+        expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+      });
+
+      fireEvent.click(screen.getByTestId('ChecklistIcon'));
+      fireEvent.click(screen.getAllByTestId('gallery-sticker')[0]);
+      fireEvent.click(screen.getAllByTestId('gallery-sticker')[1]);
+      await waitFor(() => {
+        expect(screen.getByText('2 photo(s) sélectionnée(s)')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Supprimer la sélection'));
+      expect(window.confirm).toHaveBeenCalledWith('Supprimer 2 photo(s) ?');
+      await waitFor(() => {
+        const [url, options] = global.fetch.mock.calls.find(
+          ([u]) => u === '/api/gallery/pics/delete_many/'
+        );
+        expect(url).toBe('/api/gallery/pics/delete_many/');
+        expect(options.method).toBe('POST');
+        expect(JSON.parse(options.body)).toEqual({
+          slug: 'test-gallery',
+          file_full_names: ['photo1.jpg', 'photo2.jpg'],
+        });
+      });
+      await waitFor(() => {
+        expect(window.location.reload).toHaveBeenCalled();
+      });
+    } finally {
+      window.location = originalLocation;
+    }
+  });
+
+  test('cancelling the confirmation does not call the delete API', async () => {
+    window.confirm = jest.fn(() => false);
+
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByTestId('ChecklistIcon'));
+    fireEvent.click(screen.getAllByTestId('gallery-sticker')[0]);
+    fireEvent.click(screen.getByText('Supprimer la sélection'));
+    expect(window.confirm).toHaveBeenCalled();
+    expect(
+      global.fetch.mock.calls.find(([u]) => u === '/api/gallery/pics/delete_many/')
+    ).toBeUndefined();
   });
 });
 

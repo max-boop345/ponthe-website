@@ -160,7 +160,7 @@ export default function Gallery({props}){
         </div>
         {selectionMode && (
           <div className="selection-bar">
-            <span>{selected.size} photo(s) sélectionnée(s)</span>
+            <span aria-live="polite">{selected.size} photo(s) sélectionnée(s)</span>
             <button type="button" className="login-button" onClick={downloadSelected}
               disabled={selected.size === 0}>
               Télécharger la sélection
