@@ -76,6 +76,7 @@ body{
 .gallery-sticker{
   cursor:pointer;
   height: 170px;
+  position: relative;
 }
 
 .gallery-img{
@@ -571,4 +572,46 @@ body{
   color:white;
   border-left: 3px solid rgb(255, 0, 0);
   border-radius: 5px;
+}
+
+/* Mode sélection multiple : rond de validation et vignette sélectionnée */
+.gallery-sticker.selected{
+  outline: 4px solid #1976d2;
+  outline-offset: -4px;
+}
+
+.sticker-check{
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #1976d2;
+  background: white;
+  border-radius: 50%;
+  z-index: 5;
+}
+
+.sticker-check-off{
+  color: #9e9e9e;
+}
+
+/* Bouton « Sélectionner » du header de la page galerie */
+.select-toggle-icon{
+  cursor: pointer;
+  color: #d8d8d8;
+  font-size: 2rem;
+  vertical-align: middle;
+  margin-left: 12px;
+}
+
+/* Barre d'actions de la sélection (compteur + boutons) */
+.selection-bar{
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+}
+
+/* Icône dont le mode associé est actif (ex. filtre signalements) */
+.icon-active{
+  color: #1976d2;
 }

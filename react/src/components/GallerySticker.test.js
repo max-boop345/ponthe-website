@@ -65,4 +65,54 @@ describe('GallerySticker', () => {
     expect(sticker.className).toBe('gallery-sticker compact');
     expect(img.className).toBe('gallery-img compact');
   });
+
+  test('in selection mode, clicking calls onToggleSelect instead of modal_func', () => {
+    const modalFunc = jest.fn();
+    const onToggleSelect = jest.fn();
+    const { container } = render(
+      <GallerySticker
+        {...defaultProps}
+        modal_func={modalFunc}
+        selectionMode={true}
+        selected={false}
+        onToggleSelect={onToggleSelect}
+        fileFullName="photo.jpg"
+      />
+    );
+    fireEvent.click(container.querySelector('.gallery-sticker'));
+    expect(onToggleSelect).toHaveBeenCalledWith('photo.jpg');
+    expect(modalFunc).not.toHaveBeenCalled();
+    expect(container.querySelector('.img-modal')).not.toBeInTheDocument();
+  });
+
+  test('selected sticker gets the selected class and a check icon', () => {
+    const { container } = render(
+      <GallerySticker
+        {...defaultProps}
+        selectionMode={true}
+        selected={true}
+        onToggleSelect={jest.fn()}
+        fileFullName="photo.jpg"
+      />
+    );
+    expect(container.querySelector('.gallery-sticker.selected')).toBeInTheDocument();
+    expect(container.querySelector('.sticker-check')).toBeInTheDocument();
+  });
+
+  test('selection class names match CSS rules in App.css', () => {
+    // Même contrat que le test compact : renommer les classes doit faire échouer ici.
+    const { container } = render(
+      <GallerySticker
+        {...defaultProps}
+        selectionMode={true}
+        selected={true}
+        onToggleSelect={jest.fn()}
+        fileFullName="photo.jpg"
+      />
+    );
+    const sticker = container.querySelector('.gallery-sticker');
+    const check = container.querySelector('.sticker-check');
+    expect(sticker.className).toBe('gallery-sticker selected');
+    expect(check.className).toBe('sticker-check');
+  });
 });
