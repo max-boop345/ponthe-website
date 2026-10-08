@@ -1,4 +1,6 @@
+import io
 import os
+import zipfile
 
 import galerie.loader as loader
 import galerie.settings as settings
@@ -13,6 +15,7 @@ from api.serializers import (
 )
 from django.db import IntegrityError
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import slugify
 from rest_framework import status
@@ -287,6 +290,40 @@ def delete_pic(request):
     file.delete()
     # TODO DELETE FILE CONCERNED
     return Response(FileSerializer(file).data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def download_pics(request):
+    """Zip the selected pictures of a gallery, for anyone who can see them."""
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
+        return Response(
+            {"status": "error", "message": "Cette galerie n'existe pas."}, status=404
+        )
+    if not gallery.can_user_access(request.user):
+        return Response(FORBIDDEN_GALLERY, status=403)
+    names = request.data.get("file_full_names")
+    if not isinstance(names, list) or len(names) == 0:
+        return Response(
+            {"status": "error", "message": "Aucune photo sélectionnée."}, status=400
+        )
+    files = File.objects.filter(gallery=gallery, file_full_name__in=names)
+    if not files.exists():
+        return Response(
+            {"status": "error", "message": "Aucune de ces photos n'existe."}, status=404
+        )
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file in files:
+            path = loader.gallery_path(gallery.slug, "uploads", file.file_full_name)
+            if os.path.isfile(path):
+                archive.write(path, arcname=file.file_full_name)
+    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = (
+        f'attachment; filename="{gallery.slug}-selection.zip"'
+    )
+    return response
 
 
 @api_view(["GET"])
