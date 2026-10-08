@@ -8,6 +8,9 @@ import Row from 'react-bootstrap/Row';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DownloadIcon from '@mui/icons-material/Download';
+import FlagIcon from '@mui/icons-material/Flag';
+import Cookies from 'js-cookie';
+import ReportDialog from './ReportDialog';
 
 const PictureMosaic = (props) => {
 
@@ -16,6 +19,8 @@ const PictureMosaic = (props) => {
     //Current loaded picture in modal
     const [current, setCurrent] = useState(null);
     const [pics, setPics] = useState([]);
+    // Report dialog open state
+    const [reportOpen, setReportOpen] = useState(false);
 
     //Open image in full screen when vignette is clicked
     const toggleModal = (e, img) => {
@@ -41,6 +46,37 @@ const PictureMosaic = (props) => {
         let nextId = pics.indexOf(current) - 1;
         if (nextId == -1) nextId = pics.length - 1
         setCurrent(pics[nextId]);
+    };
+
+    // Send a report for the picture currently displayed
+    const reportCurrent = (category, message) => {
+        const array = current.split('/');
+        const reportOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': Cookies.get('csrftoken') },
+            body: JSON.stringify({
+                slug: gallery_slug,
+                file_full_name: array[array.length - 1],
+                category: category,
+                message: message,
+            })
+        };
+        fetch('/api/gallery/pics/report/', reportOptions)
+            .then(res => res.json())
+            .then(
+                (result) => {
+                    if (result.status === 'error') {
+                        alert(result.message)
+                    } else {
+                        alert('Merci, votre signalement a été transmis.')
+                    }
+                },
+                (error) => {
+                    console.log(error)
+                }
+            );
     };
 
     // Swipe detection
@@ -91,7 +127,9 @@ const PictureMosaic = (props) => {
           if (ref.current && !ref.current.contains(event.target)
             && ref2.current && !ref2.current.contains(event.target)
             && ref3.current && !ref3.current.contains(event.target)
-            && ref4.current && !ref4.current.contains(event.target)) {
+            && ref4.current && !ref4.current.contains(event.target)
+            && ref5.current && !ref5.current.contains(event.target)
+            && !(event.target.closest && event.target.closest('.modal'))) {
             closeModal()
           }
         };
@@ -121,6 +159,7 @@ const PictureMosaic = (props) => {
     const ref2 = useRef(null);
     const ref3 = useRef(null)
     const ref4 = useRef(null)
+    const ref5 = useRef(null)
 
     return (
         <>
@@ -136,12 +175,20 @@ const PictureMosaic = (props) => {
                     <div className="pic-modal-nav">
                         <span className='close' onClick={closeModal}>&times;</span>
                         <a href={current} download={current}><span ref={ref4}><DownloadIcon className="download" /></span></a>
+                        {is_authenticated && (
+                            <span ref={ref5}><FlagIcon className="download report-flag" onClick={() => setReportOpen(true)} /></span>
+                        )}
                     </div>
                     <div className='pic-modal-content' onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
                         <div ref={ref} className="img-browser">
                             <img src={current} className='img-modal' />
                         </div>
                     </div>
+                    <ReportDialog
+                        open={reportOpen}
+                        onClose={() => setReportOpen(false)}
+                        onSubmit={reportCurrent}
+                    />
                 </div>
             )
             }
