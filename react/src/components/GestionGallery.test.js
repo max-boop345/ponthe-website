@@ -92,6 +92,7 @@ function mockFetch() {
     }
     if (url.includes('/api/gallery/reports/')) {
       return Promise.resolve({
+        ok: true,
         json: () => Promise.resolve(mockReportsResponse),
       });
     }
@@ -788,6 +789,77 @@ describe('GestionGallery', () => {
       global.fetch.mock.calls.find(([u]) => u === '/api/gallery/pics/delete_many/')
     ).toBeUndefined();
   });
+
+  // --- Filtre photos signalées (drapeau) ---
+
+  test('the flag shows only the reported pictures', async () => {
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByTestId('FlagIcon'));
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(1);
+    });
+    expect(screen.getAllByTestId('gallery-sticker')[0].getAttribute('data-img'))
+      .toBe('/media/test-gallery/uploads/photo1.jpg');
+    // Le bouton de détails des signalements n'apparaît qu'en mode filtré
+    expect(screen.getByTestId('ListIcon')).toBeInTheDocument();
+  });
+
+  test('clicking the flag again returns to the normal view', async () => {
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByTestId('FlagIcon'));
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(1);
+    });
+
+    fireEvent.click(screen.getByTestId('FlagIcon'));
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+    expect(screen.queryByTestId('ListIcon')).not.toBeInTheDocument();
+  });
+
+  test('the flag fetches the reports from the API with the gallery slug', async () => {
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByTestId('FlagIcon'));
+    await waitFor(() => {
+      const [url, options] = global.fetch.mock.calls.find(
+        ([u]) => u === '/api/gallery/reports/'
+      );
+      expect(url).toBe('/api/gallery/reports/');
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body)).toEqual({ slug: 'test-gallery' });
+    });
+  });
+
+  test('the details button opens the reports modal', async () => {
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    fireEvent.click(screen.getByTestId('FlagIcon'));
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(1);
+    });
+
+    fireEvent.click(screen.getByTestId('ListIcon'));
+    await waitFor(() => {
+      expect(screen.getByText('Signalements')).toBeInTheDocument();
+      expect(screen.getByText(/signalée par/)).toBeInTheDocument();
+    });
+  });
 });
 
 describe('GestionGallery — Zoom Toggle', () => {
@@ -1010,12 +1082,12 @@ describe('GestionGallery reports', () => {
         );
     });
 
-    test('clicking the flag icon fetches and shows the reports', async () => {
+    test('the flag fetches the reports and the details button shows them', async () => {
         window.fetch = jest.fn(() =>
             Promise.resolve({ ok: true, json: () => Promise.resolve(REPORTS) })
         );
         render(<GestionGallery />);
-        fireEvent.click(screen.getByTitle('Signalements'));
+        fireEvent.click(screen.getByTitle('Photos signalées'));
 
         await waitFor(() =>
             expect(window.fetch).toHaveBeenCalledWith(
@@ -1023,13 +1095,16 @@ describe('GestionGallery reports', () => {
                 expect.objectContaining({ method: 'POST' })
             )
         );
+        // En mode filtré, le bouton de détails ouvre le modal des signalements
+        fireEvent.click(await screen.findByTitle('Détails des signalements'));
         expect(await screen.findByText('picture.jpg')).toBeInTheDocument();
         expect(screen.getByText('student')).toBeInTheDocument();
     });
 
     test('empty gallery shows the empty state', async () => {
         render(<GestionGallery />);
-        fireEvent.click(screen.getByTitle('Signalements'));
+        fireEvent.click(screen.getByTitle('Photos signalées'));
+        fireEvent.click(await screen.findByTitle('Détails des signalements'));
         expect(
             await screen.findByText('Aucun signalement sur cette galerie.')
         ).toBeInTheDocument();
@@ -1044,7 +1119,7 @@ describe('GestionGallery reports', () => {
             })
         );
         render(<GestionGallery />);
-        fireEvent.click(screen.getByTitle('Signalements'));
+        fireEvent.click(screen.getByTitle('Photos signalées'));
         await new Promise((resolve) => setTimeout(resolve, 0));
         // Le modal ne s'est pas ouvert : aucun titre Signalements de modal ni crash du rendu.
         expect(screen.queryByRole('heading', { name: 'Signalements' })).not.toBeInTheDocument();

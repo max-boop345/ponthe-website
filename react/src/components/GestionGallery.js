@@ -17,6 +17,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import ChecklistIcon from '@mui/icons-material/Checklist';
+import ListIcon from '@mui/icons-material/List';
 import {Stack, Select, MenuItem} from '@mui/material';
 
 export default function Gallery({props}){
@@ -40,6 +41,10 @@ export default function Gallery({props}){
     // Mode sélection multiple
     const [selectionMode, setSelectionMode] = useState(false);
     const [selected, setSelected] = useState(new Set());
+
+    // Filtre « photos signalées » : actif ou non
+    const [reportsOnly, setReportsOnly] = useState(false);
+    const [reportedNames, setReportedNames] = useState(new Set());
 
     const requestOptions = {
       method: 'POST',
@@ -378,6 +383,44 @@ export default function Gallery({props}){
               }
             );
     }
+
+    // The flag is a toggle: only reported pictures, then back to normal
+    const toggleReportsOnly = () => {
+      if (reportsOnly) {
+        setReportsOnly(false)
+        return
+      }
+      const reportOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': Cookies.get('csrftoken') },
+        body: JSON.stringify({ slug: gallery_slug })
+      };
+      fetch('/api/gallery/reports/', reportOptions)
+            .then(res => {
+              if (!res.ok) {
+                alert("Impossible de charger les signalements.")
+                return null
+              }
+              return res.json()
+            })
+            .then(
+              (result) => {
+                if (Array.isArray(result)) {
+                  setReportedNames(new Set(result.map(r => r.file_full_name)))
+                  setReportsOnly(true)
+                }
+              },
+              (error) => {
+                console.log(error)
+              }
+            );
+    }
+
+    const displayedPics = reportsOnly
+      ? picsData.filter(pic => reportedNames.has(pic.file_full_name))
+      : picsData;
     return (
       <>
       <CustomNavbar/>
@@ -387,7 +430,12 @@ export default function Gallery({props}){
             <span className='centered-button'>
               <AddCircleOutlineIcon className="icon" onClick={openAddModal}/>
               <DeleteIcon onClick={deleteGallery} className="icon"/>
-              <FlagIcon onClick={loadReports} className="icon" titleAccess="Signalements"/>
+              <FlagIcon onClick={toggleReportsOnly}
+                className={'icon' + (reportsOnly ? ' icon-active' : '')}
+                titleAccess={reportsOnly ? 'Afficher toutes les photos' : 'Photos signalées'}/>
+              {reportsOnly && (
+                <ListIcon className="icon" onClick={loadReports} titleAccess="Détails des signalements"/>
+              )}
               <ChecklistIcon className="icon" onClick={toggleSelectionMode}
                 titleAccess={selectionMode ? 'Quitter le mode sélection' : 'Sélectionner des photos'}/>
               {isCompact
@@ -415,7 +463,7 @@ export default function Gallery({props}){
           </Stack>
         {selectionMode && (
           <div className="selection-bar">
-            <span>{selected.size} photo(s) sélectionnée(s)</span>
+            <span aria-live="polite">{selected.size} photo(s) sélectionnée(s)</span>
             <button type="button" className="login-button" onClick={downloadSelected}
               disabled={selected.size === 0}>
               Télécharger la sélection
@@ -429,7 +477,7 @@ export default function Gallery({props}){
         </div>
         <Container fluid>
           <Row className='g-1'>
-            {picsData.map((pic, index) => (
+            {displayedPics.map((pic, index) => (
               <Col key={index} xs={isCompact ? "3" : "4"} sm={isCompact ? "2" : "3"} lg={isCompact ? "1" : "2"}>
                 <GallerySticker img={pic.link + '/uploads/' + pic.file_full_name}
                                 thumb={pic.link + '/thumbnails/' + pic.file_full_name}
