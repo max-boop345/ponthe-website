@@ -19,14 +19,15 @@ describe('GestionGallery reports', () => {
         window.is_staff = false;
         window.is_superuser = false;
         window.is_authenticated = true;
+        window.alert = jest.fn();
         window.fetch = jest.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve([]) })
+            Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
         );
     });
 
     test('clicking the flag icon fetches and shows the reports', async () => {
         window.fetch = jest.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve(REPORTS) })
+            Promise.resolve({ ok: true, json: () => Promise.resolve(REPORTS) })
         );
         render(<GestionGallery />);
         fireEvent.click(screen.getByTitle('Signalements'));
@@ -47,5 +48,21 @@ describe('GestionGallery reports', () => {
         expect(
             await screen.findByText('Aucun signalement sur cette galerie.')
         ).toBeInTheDocument();
+    });
+
+    test('an error response does not crash and keeps the modal closed', async () => {
+        window.fetch = jest.fn(() =>
+            Promise.resolve({
+                ok: false,
+                status: 403,
+                json: () => Promise.resolve({ detail: 'authentication credentials were not provided.' }),
+            })
+        );
+        render(<GestionGallery />);
+        fireEvent.click(screen.getByTitle('Signalements'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        // Le modal ne s'est pas ouvert : aucun titre Signalements de modal ni crash du rendu.
+        expect(screen.queryByRole('heading', { name: 'Signalements' })).not.toBeInTheDocument();
+        expect(window.alert).toHaveBeenCalled();
     });
 });

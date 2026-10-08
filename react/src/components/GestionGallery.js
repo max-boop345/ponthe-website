@@ -231,10 +231,18 @@ export default function Gallery({props}){
         body: JSON.stringify({ slug: gallery_slug })
       };
       fetch('/api/gallery/reports/', reportOptions)
-            .then(res => res.json())
+            .then(res => {
+              if (!res.ok) {
+                alert("Impossible de charger les signalements.")
+                return null
+              }
+              return res.json()
+            })
             .then(
               (result) => {
-                setReports(result)
+                if (Array.isArray(result)) {
+                  setReports(result)
+                }
               },
               (error) => {
                 console.log(error)
@@ -309,6 +317,7 @@ export default function Gallery({props}){
           )
         }
 
+        {/* ref est partagé entre les modals : un seul est ouvert à la fois, comme l'add-modal. */}
         {reports !== null && (
           <div className='pic-modal'>
             <div ref={ref} className='add-modal-content'>
