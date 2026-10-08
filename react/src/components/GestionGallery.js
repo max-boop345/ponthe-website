@@ -22,7 +22,7 @@ export default function Gallery({props}){
     const [state, setState] = useState(false);
     //Current loaded picture in modal
     const [current, setCurrent] = useState(null);
-    const [picsList, setPicsList] = useState([]);
+    const [picsData, setPicsData] = useState([]);
     const [pics, setPics] = useState([]);
     const [name, setName] = useState('');
     const [addModalState, setaddModalState] = useState(false);
@@ -120,7 +120,6 @@ export default function Gallery({props}){
     };
 
     useEffect(() => {
-      let picsDiv = []
       let picsTemp = []
       fetch('/api/gallery/pics/', requestOptions)
       .then(res => res.json())
@@ -128,18 +127,9 @@ export default function Gallery({props}){
         (result) => {
           for(const pic in result){
             picsTemp.push(result[pic].link + '/uploads/' + result[pic].file_full_name)
-            picsDiv.push(
-            <Col key={pic} xs={isCompact ? "3" : "4"} sm={isCompact ? "2" : "3"} lg={isCompact ? "1" : "2"}>
-              <GallerySticker img={result[pic].link + '/uploads/' + result[pic].file_full_name}
-                              thumb={result[pic].link + '/thumbnails/' + result[pic].file_full_name}
-                              modal_func={toggleModal}
-                              compact={isCompact}/>
-            </Col>
-            )
           }
-          setPicsList(picsDiv)
+          setPicsData(result)
           setPics(picsTemp)
-          console.log(pics)
         },
         (error) => {
           console.log(error)
@@ -158,7 +148,7 @@ export default function Gallery({props}){
                 }
               );
 
-    }, [isCompact])
+    }, [])
 
 
     const ref = useRef(null);
@@ -260,7 +250,14 @@ export default function Gallery({props}){
         </div>
         <Container fluid>
           <Row className='g-1'>
-            {picsList}
+            {picsData.map((pic, index) => (
+              <Col key={index} xs={isCompact ? "3" : "4"} sm={isCompact ? "2" : "3"} lg={isCompact ? "1" : "2"}>
+                <GallerySticker img={pic.link + '/uploads/' + pic.file_full_name}
+                                thumb={pic.link + '/thumbnails/' + pic.file_full_name}
+                                modal_func={toggleModal}
+                                compact={isCompact}/>
+              </Col>
+            ))}
           </Row>
         </Container>
 

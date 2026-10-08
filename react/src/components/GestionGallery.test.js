@@ -261,4 +261,22 @@ describe('GestionGallery — Zoom Toggle', () => {
       expect(selects.length).toBe(2);
     });
   });
+
+  test('does not re-fetch pics when toggling zoom', async () => {
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+    const picsFetchCallsBefore = global.fetch.mock.calls.filter(
+      call => call[0].includes('/api/gallery/pics/')
+    ).length;
+    fireEvent.click(screen.getByTitle('Vue dézoomée'));
+    await waitFor(() => {
+      expect(screen.getByTitle('Vue normale')).toBeInTheDocument();
+    });
+    const picsFetchCallsAfter = global.fetch.mock.calls.filter(
+      call => call[0].includes('/api/gallery/pics/')
+    ).length;
+    expect(picsFetchCallsAfter).toBe(picsFetchCallsBefore);
+  });
 });
