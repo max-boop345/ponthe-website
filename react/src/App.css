@@ -2,6 +2,17 @@ body{
   background: white!important;
 }
 
+/* Design tokens Ponthé — validés sur le canvas Superdesign (Affiche arrondie / Hero osé) */
+:root{
+  --ponthe-blue: #8193F2;        /* pervenche : navbar, bandeaux, pieds de cartes */
+  --ponthe-blue-deep: #5B6FD6;   /* ombre dure des cartes affiche */
+  --ponthe-blue-dark: #4353B8;   /* titres de cartes */
+  --ponthe-yellow: rgb(255, 196, 37); /* accent : hover, pills actives, outline */
+  --ponthe-gray-border: #cfcfcf;
+  --ponthe-radius-banner: 32px;
+  --ponthe-radius-card: 16px;
+}
+
 .no-padding{
   padding-left: 0;
   padding-right: 0;
@@ -48,7 +59,7 @@ body{
 }
 
 .c-nav{
-  background-color: #8193F2;
+  background-color: var(--ponthe-blue);
   box-shadow: 0px 0px 7px 0px rgba(0,0,0,0.5);
 }
 
@@ -294,7 +305,7 @@ body{
 }
 
 .img-legend:hover{
-  color:rgb(255 196 37);
+  color:var(--ponthe-yellow);
 }
 
 .img-legend-text{
@@ -323,7 +334,7 @@ body{
 
 .add-icon:hover,
 .add-icon:focus {
-  color:rgb(255 196 37);
+  color:var(--ponthe-yellow);
   cursor: pointer;
 }
 
@@ -368,14 +379,14 @@ body{
 
 .icon:hover,
 .icon:focus {
-  color:rgb(255 196 37);
+  color:var(--ponthe-yellow);
   cursor: pointer;
 }
 
 .gallery-title{
   margin-top: 50px;
   margin-bottom: 50px;
-  color: #8193F2;
+  color: var(--ponthe-blue);
   text-align: center;
   font-family: 'Inter';
   font-weight: bold;
@@ -403,8 +414,8 @@ body{
 
 .big-button:focus,
 .big-button:hover{
-  color:rgb(255 196 37);
-  border-color: rgb(255 196 37);
+  color:var(--ponthe-yellow);
+  border-color: var(--ponthe-yellow);
 }
 
 .ytb-btn{
