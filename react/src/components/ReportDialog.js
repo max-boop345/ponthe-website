@@ -17,7 +17,7 @@ export default function ReportDialog({ open, onClose, onSubmit }) {
     const [message, setMessage] = useState('');
 
     const submit = () => {
-        onSubmit(category, message);
+        onSubmit(category, message.trim());
         setMessage('');
         onClose();
     };
@@ -33,7 +33,7 @@ export default function ReportDialog({ open, onClose, onSubmit }) {
                         <Form.Check
                             key={c.value}
                             type="radio"
-                            id={"report-category-" + c.value}
+                            id={"report-category-" + c.value.replace(/\s+/g, '-')}
                             name="report-category"
                             label={c.label}
                             checked={category === c.value}
