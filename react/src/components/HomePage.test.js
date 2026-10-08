@@ -55,7 +55,7 @@ describe('HomePage (hero osé sans voile)', () => {
   test('renders the footer', () => {
     render(<HomePage />);
     expect(
-      screen.getByText(/Club Ponthé — École des Ponts/i)
+      screen.getByText(/Club Ponthé — École nationale des ponts et chaussées/i)
     ).toBeInTheDocument();
   });
 });

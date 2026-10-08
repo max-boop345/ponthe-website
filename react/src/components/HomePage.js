@@ -70,7 +70,7 @@ export default function HomePage (){
                 </section>
             </main>
             <footer className="site-footer">
-                <p>© 2026 Club Ponthé — École des Ponts ParisTech</p>
+                <p>© 2026 Club Ponthé — École nationale des ponts et chaussées</p>
             </footer>
         </>
     )
