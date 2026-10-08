@@ -24,3 +24,6 @@ yarn-error.log*
 
 #python binaries
 *.pyc
+
+# superdesign local files
+.superdesign/
