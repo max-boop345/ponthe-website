@@ -174,6 +174,20 @@ class ReportsListApiTest(TestCase):
             link="/media/gallery",
             gallery=cls.gallery,
         )
+        cls.other_gallery = Gallery.objects.create(
+            name="Other Gallery",
+            slug="other-gallery",
+            description="",
+            visibility=Gallery.Visibility.PUBLIC,
+            year=year,
+        )
+        cls.other_file = File.objects.create(
+            file_name="other",
+            file_extension="jpg",
+            file_full_name="other.jpg",
+            link="/media/other-gallery",
+            gallery=cls.other_gallery,
+        )
         cls.student = User.objects.create_user("student")
         cls.other_student = User.objects.create_user("other_student")
         cls.manager = User.objects.create_user("manager", is_staff=True)
@@ -185,6 +199,9 @@ class ReportsListApiTest(TestCase):
         )
         cls.report_2 = Report.objects.create(
             file=cls.file, reporter=cls.other_student, category=Report.Category.QUALITY
+        )
+        cls.report_other = Report.objects.create(
+            file=cls.other_file, reporter=cls.student, category=Report.Category.OTHER
         )
 
     def test_reports_list_requires_manager(self):
@@ -209,6 +226,10 @@ class ReportsListApiTest(TestCase):
         self.assertEqual(response.data[1]["reporter_name"], "student")
         self.assertEqual(response.data[1]["message"], "problème")
         self.assertIn("created_at", response.data[1])
+        # Les signalements des autres galeries ne doivent pas fuiter.
+        self.assertEqual(
+            {r["file_full_name"] for r in response.data}, {"picture.jpg"}
+        )
 
     def test_unknown_gallery_returns_404(self):
         self.client.force_login(self.manager)

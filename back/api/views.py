@@ -369,6 +369,6 @@ def gallery_reports(request):
     reports = (
         Report.objects.filter(file__gallery=gallery)
         .select_related("file", "reporter")
-        .order_by("-created_at")
+        .order_by("-created_at", "-pk")
     )
     return Response(ReportSerializer(reports, many=True).data)
