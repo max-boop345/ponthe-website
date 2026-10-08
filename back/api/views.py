@@ -326,6 +326,26 @@ def download_pics(request):
     return response
 
 
+@api_view(["POST"])
+@permission_classes([IsManager])
+def delete_pics(request):
+    """Bulk version of delete_pic: the manager selected several at once."""
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
+        return Response(
+            {"status": "error", "message": "Cette galerie n'existe pas."}, status=404
+        )
+    names = request.data.get("file_full_names")
+    if not isinstance(names, list) or len(names) == 0:
+        return Response(
+            {"status": "error", "message": "Aucune photo sélectionnée."}, status=400
+        )
+    deleted, _ = File.objects.filter(
+        gallery=gallery, file_full_name__in=names
+    ).delete()
+    return Response({"status": "ok", "deleted": deleted})
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def years(request):
