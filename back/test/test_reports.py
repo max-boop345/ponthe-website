@@ -97,6 +97,8 @@ class ReportApiTest(TestCase):
         self.assertEqual(report.reporter, self.student)
         self.assertEqual(report.category, "inapproprié")
         self.assertEqual(report.message, "photo floue")
+        self.assertEqual(response.data["file_full_name"], "picture.jpg")
+        self.assertEqual(response.data["reporter_name"], "student")
 
     def test_same_user_cannot_report_twice(self):
         self.client.force_login(self.student)
@@ -118,6 +120,18 @@ class ReportApiTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Report.objects.count(), 0)
 
+    def test_null_message_rejected(self):
+        self.client.force_login(self.student)
+        response = self.report(message=None)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Report.objects.count(), 0)
+
+    def test_too_long_message_rejected(self):
+        self.client.force_login(self.student)
+        response = self.report(message="x" * 1001)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Report.objects.count(), 0)
+
     def test_unknown_file_rejected(self):
         self.client.force_login(self.student)
         response = self.report(file_full_name="inconnue.jpg")
@@ -128,6 +142,7 @@ class ReportApiTest(TestCase):
         self.client.force_login(self.student)
         response = self.report(slug="nulle-part")
         self.assertEqual(response.status_code, 404)
+        self.assertEqual(Report.objects.count(), 0)
 
     def test_student_cannot_report_in_private_gallery(self):
         self.client.force_login(self.student)

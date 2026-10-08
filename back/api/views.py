@@ -11,6 +11,7 @@ from api.serializers import (
     ReportSerializer,
     YearSerializer,
 )
+from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import slugify
@@ -334,10 +335,25 @@ def report_pic(request):
             },
             status=400,
         )
-    report = Report.objects.create(
-        file=file,
-        reporter=request.user,
-        category=request.data["category"],
-        message=request.data.get("message", ""),
-    )
+    message = request.data.get("message", "")
+    if not isinstance(message, str) or len(message) > 1000:
+        return Response(
+            {"status": "error", "message": "Message invalide."}, status=400
+        )
+    try:
+        report = Report.objects.create(
+            file=file,
+            reporter=request.user,
+            category=request.data["category"],
+            message=message,
+        )
+    except IntegrityError:
+        # A concurrent request of the same user slipped past the check above.
+        return Response(
+            {
+                "status": "error",
+                "message": "Vous avez déjà signalé cette photo.",
+            },
+            status=400,
+        )
     return Response(ReportSerializer(report).data, status=201)
