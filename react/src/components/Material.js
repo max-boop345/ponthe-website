@@ -9,8 +9,8 @@ export default function Material (){
     return (
         <>
             <CustomNavbar/>
-            <div className="main-intro-div">
-                <h1> Matériel </h1>
+            <div className="page-header">
+                <h1 className="page-header-title">Matériel</h1>
             </div>
         </>
     )

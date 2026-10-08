@@ -35,9 +35,11 @@ describe('HomePage (hero osé sans voile)', () => {
     expect(yt).toHaveClass('pill-white');
   });
 
-  test('renders the animated scroll chevron', () => {
+  test('renders the animated scroll chevron as an accessible link', () => {
     render(<HomePage />);
-    expect(document.querySelector('.scroll-chevron')).toBeInTheDocument();
+    const chevron = screen.getByRole('link', { name: "Voir l'équipe" });
+    expect(chevron).toHaveAttribute('href', '#team');
+    expect(chevron).toHaveClass('scroll-chevron');
   });
 
   test('renders the team section with roster cards', () => {
