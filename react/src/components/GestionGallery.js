@@ -12,6 +12,8 @@ import GallerySticker from './GallerySticker'
 import Cookies from 'js-cookie';
 import CustomNavbar from './Navbar';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import {Stack, Select, MenuItem} from '@mui/material';
 
 export default function Gallery({props}){
@@ -26,6 +28,7 @@ export default function Gallery({props}){
     const [addModalState, setaddModalState] = useState(false);
     const [visibility, setVisibility] = useState('privée');
     const [view, setView] = useState('gallery');
+    const [isCompact, setIsCompact] = useState(false);
 
     const cookie = Cookies.get('csrftoken')
 
@@ -54,6 +57,10 @@ export default function Gallery({props}){
 
     const closeAddModal = () => {
       setaddModalState(false)
+    }
+
+    const toggleCompact = () => {
+      setIsCompact(prev => !prev);
     }
 
     //Goto next picture in modal
@@ -122,10 +129,11 @@ export default function Gallery({props}){
           for(const pic in result){
             picsTemp.push(result[pic].link + '/uploads/' + result[pic].file_full_name)
             picsDiv.push(
-            <Col key={pic} xs="4" sm="3" lg="2">
+            <Col key={pic} xs={isCompact ? "3" : "4"} sm={isCompact ? "2" : "3"} lg={isCompact ? "1" : "2"}>
               <GallerySticker img={result[pic].link + '/uploads/' + result[pic].file_full_name}
                               thumb={result[pic].link + '/thumbnails/' + result[pic].file_full_name}
-                              modal_func={toggleModal}/>
+                              modal_func={toggleModal}
+                              compact={isCompact}/>
             </Col>
             )
           }
@@ -150,7 +158,7 @@ export default function Gallery({props}){
                 }
               );
 
-    }, [])
+    }, [isCompact])
 
 
     const ref = useRef(null);
@@ -226,6 +234,10 @@ export default function Gallery({props}){
             <span className='centered-button'>
               <AddCircleOutlineIcon className="icon" onClick={openAddModal}/>
               <DeleteIcon onClick={deleteGallery} className="icon"/>
+              {isCompact
+                ? <ZoomInIcon className="icon" onClick={toggleCompact} titleAccess="Vue normale"/>
+                : <ZoomOutIcon className="icon" onClick={toggleCompact} titleAccess="Vue dézoomée"/>
+              }
               <Select style={{padding:0, height: "40px"}}value={visibility} onChange={e =>
               {
                 setVisibility(e.target.value)
