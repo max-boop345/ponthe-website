@@ -8,6 +8,8 @@ import DownloadIcon from '@mui/icons-material/Download';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DeleteIcon from '@mui/icons-material/Delete';
+import FlagIcon from '@mui/icons-material/Flag';
+import ReportList from './ReportList';
 import GallerySticker from './GallerySticker'
 import Cookies from 'js-cookie';
 import CustomNavbar from './Navbar';
@@ -26,6 +28,8 @@ export default function Gallery({props}){
     const [addModalState, setaddModalState] = useState(false);
     const [visibility, setVisibility] = useState('privée');
     const [view, setView] = useState('gallery');
+    //Reports received state
+    const [reports, setReports] = useState(null);
 
     const cookie = Cookies.get('csrftoken')
 
@@ -217,6 +221,26 @@ export default function Gallery({props}){
               }
           );
     }
+
+    const loadReports = () => {
+      const reportOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': Cookies.get('csrftoken') },
+        body: JSON.stringify({ slug: gallery_slug })
+      };
+      fetch('/api/gallery/reports/', reportOptions)
+            .then(res => res.json())
+            .then(
+              (result) => {
+                setReports(result)
+              },
+              (error) => {
+                console.log(error)
+              }
+            );
+    }
     return (
       <>
       <CustomNavbar/>
@@ -226,6 +250,7 @@ export default function Gallery({props}){
             <span className='centered-button'>
               <AddCircleOutlineIcon className="icon" onClick={openAddModal}/>
               <DeleteIcon onClick={deleteGallery} className="icon"/>
+              <FlagIcon onClick={loadReports} className="icon" titleAccess="Signalements"/>
               <Select style={{padding:0, height: "40px"}}value={visibility} onChange={e =>
               {
                 setVisibility(e.target.value)
@@ -279,6 +304,17 @@ export default function Gallery({props}){
                   <input type='file' name='zipfile'/>
                   <button type="submit" className="login-button">Lancer l'envoi</button>
                 </form>
+            </div>
+          </div>
+          )
+        }
+
+        {reports !== null && (
+          <div className='pic-modal'>
+            <div ref={ref} className='add-modal-content'>
+              <span className='close-white-modal' onClick={() => setReports(null)}>&times;</span>
+              <h3>Signalements</h3>
+              <ReportList reports={reports}/>
             </div>
           </div>
           )
