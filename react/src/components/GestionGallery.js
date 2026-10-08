@@ -12,6 +12,8 @@ import GallerySticker from './GallerySticker'
 import Cookies from 'js-cookie';
 import CustomNavbar from './Navbar';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import {Stack, Select, MenuItem} from '@mui/material';
 
 export default function Gallery({props}){
@@ -20,7 +22,7 @@ export default function Gallery({props}){
     const [state, setState] = useState(false);
     //Current loaded picture in modal
     const [current, setCurrent] = useState(null);
-    const [picsList, setPicsList] = useState([]);
+    const [picsData, setPicsData] = useState([]);
     const [pics, setPics] = useState([]);
     const [name, setName] = useState('');
     const [addModalState, setaddModalState] = useState(false);
@@ -29,6 +31,7 @@ export default function Gallery({props}){
     const [uploadError, setUploadError] = useState('');
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [isCompact, setIsCompact] = useState(false);
 
     const requestOptions = {
       method: 'POST',
@@ -105,6 +108,10 @@ export default function Gallery({props}){
       }
     };
 
+    const toggleCompact = () => {
+      setIsCompact(prev => !prev);
+    }
+
     //Goto next picture in modal
     const nextPicture = () => {
       console.log(pics)
@@ -162,7 +169,6 @@ export default function Gallery({props}){
     };
 
     useEffect(() => {
-      let picsDiv = []
       let picsTemp = []
       fetch('/api/gallery/pics/', requestOptions)
       .then(res => res.json())
@@ -170,17 +176,9 @@ export default function Gallery({props}){
         (result) => {
           for(const pic in result){
             picsTemp.push(result[pic].link + '/uploads/' + result[pic].file_full_name)
-            picsDiv.push(
-            <Col key={pic} xs="4" sm="3" lg="2">
-              <GallerySticker img={result[pic].link + '/uploads/' + result[pic].file_full_name}
-                              thumb={result[pic].link + '/thumbnails/' + result[pic].file_full_name}
-                              modal_func={toggleModal}/>
-            </Col>
-            )
           }
-          setPicsList(picsDiv)
+          setPicsData(result)
           setPics(picsTemp)
-          console.log(pics)
         },
         (error) => {
           console.log(error)
@@ -275,6 +273,10 @@ export default function Gallery({props}){
             <span className='centered-button'>
               <AddCircleOutlineIcon className="icon" onClick={openAddModal}/>
               <DeleteIcon onClick={deleteGallery} className="icon"/>
+              {isCompact
+                ? <ZoomInIcon className="icon" onClick={toggleCompact} titleAccess="Vue normale"/>
+                : <ZoomOutIcon className="icon" onClick={toggleCompact} titleAccess="Vue dézoomée"/>
+              }
               <Select style={{padding:0, height: "40px"}}value={visibility} onChange={e =>
               {
                 setVisibility(e.target.value)
@@ -297,7 +299,14 @@ export default function Gallery({props}){
         </div>
         <Container fluid>
           <Row className='g-1'>
-            {picsList}
+            {picsData.map((pic, index) => (
+              <Col key={index} xs={isCompact ? "3" : "4"} sm={isCompact ? "2" : "3"} lg={isCompact ? "1" : "2"}>
+                <GallerySticker img={pic.link + '/uploads/' + pic.file_full_name}
+                                thumb={pic.link + '/thumbnails/' + pic.file_full_name}
+                                modal_func={toggleModal}
+                                compact={isCompact}/>
+              </Col>
+            ))}
           </Row>
         </Container>
 

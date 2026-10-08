@@ -83,6 +83,29 @@ body{
   object-fit: cover;
 }
 
+
+/* Vue dézoomée gestion : miniatures plus petites pour voir plus de photos */
+.gallery-sticker.compact {
+  height: 80px;
+}
+
+.gallery-img.compact {
+  height: 80px;
+}
+
+/* Mobile : en mode compact, garder le ratio carré comme en mode normal */
+@media screen and (max-width: 575px) {
+  .gallery-sticker.compact {
+    height: auto;
+  }
+
+  .gallery-img.compact {
+    display: block;
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
+
 .galleries-img{
   height: 256px;
   object-fit: cover;
