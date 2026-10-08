@@ -1,0 +1,84 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import Galleries from './Galleries';
+
+jest.mock('js-cookie', () => ({
+  get: jest.fn(() => 'fake-csrf-token'),
+}));
+
+jest.mock('./Navbar', () => () => <div data-testid="mock-navbar" />);
+
+jest.mock('./GalleryMosaic', () => {
+  return function MockGalleryMosaic(props) {
+    return <div data-testid="gallery-mosaic" data-year={props.year} />;
+  };
+});
+
+const mockGalleries = [
+  { name: 'Croisière', slug: 'croisiere', sticker_url: '/media/croisiere/t.jpg', year: '2025-2026' },
+  { name: 'Gala', slug: 'gala', sticker_url: '/media/gala/t.jpg', year: '2024-2025' },
+];
+const mockYears = [{ name: '2025-2026' }, { name: '2024-2025' }, { name: '2023-2024' }];
+
+function mockFetch() {
+  global.fetch = jest.fn((url) => {
+    if (url.includes('/api/get_view')) {
+      return Promise.resolve({ json: () => Promise.resolve(mockGalleries) });
+    }
+    if (url.includes('/api/years')) {
+      return Promise.resolve({ json: () => Promise.resolve(mockYears) });
+    }
+    return Promise.resolve({ json: () => Promise.resolve([]) });
+  });
+}
+
+describe('Galleries (page liste des galeries)', () => {
+  beforeEach(() => {
+    mockFetch();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('renders the pervenche banner with the poster title and yellow accent', async () => {
+    render(<Galleries view="galerie" />);
+    await waitFor(() =>
+      expect(screen.getByText('GALRIES')).toBeInTheDocument()
+    );
+    expect(screen.getByText('RIES')).toBeInTheDocument();
+    expect(screen.getByText('GALRIES').closest('.hero-banner')).toBeInTheDocument();
+  });
+
+  test('renders one pill per year, the first one active', async () => {
+    render(<Galleries view="galerie" />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '2025-2026' })).toBeInTheDocument()
+    );
+    expect(screen.getByRole('button', { name: '2025-2026' })).toHaveClass('active');
+    expect(screen.getByRole('button', { name: '2024-2025' })).not.toHaveClass('active');
+    expect(screen.getByRole('button', { name: '2023-2024' })).not.toHaveClass('active');
+  });
+
+  test('clicking a year pill updates the year passed to the mosaic', async () => {
+    render(<Galleries view="galerie" />);
+    await waitFor(() =>
+      expect(screen.getByTestId('gallery-mosaic')).toBeInTheDocument()
+    );
+    expect(screen.getByTestId('gallery-mosaic').getAttribute('data-year')).toBe('2025-2026');
+    fireEvent.click(screen.getByRole('button', { name: '2024-2025' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('gallery-mosaic').getAttribute('data-year')).toBe('2024-2025')
+    );
+    expect(screen.getByRole('button', { name: '2024-2025' })).toHaveClass('active');
+    expect(screen.getByRole('button', { name: '2025-2026' })).not.toHaveClass('active');
+  });
+
+  test('exposition view titles the banner EXPOSITIONS', async () => {
+    render(<Galleries view="exposition" />);
+    await waitFor(() =>
+      expect(screen.getByText('EXPOSITIONS')).toBeInTheDocument()
+    );
+    expect(screen.getByText('ITIONS')).toBeInTheDocument();
+  });
+});
