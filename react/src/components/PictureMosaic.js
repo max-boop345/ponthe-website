@@ -74,7 +74,7 @@ const PictureMosaic = (props) => {
                     }
                 },
                 (error) => {
-                    console.log(error)
+                    alert("Impossible d'envoyer le signalement, réessayez plus tard.")
                 }
             );
     };
@@ -128,8 +128,8 @@ const PictureMosaic = (props) => {
             && ref2.current && !ref2.current.contains(event.target)
             && ref3.current && !ref3.current.contains(event.target)
             && ref4.current && !ref4.current.contains(event.target)
-            && ref5.current && !ref5.current.contains(event.target)
-            && !(event.target.closest && event.target.closest('.modal'))) {
+            && (ref5.current ? !ref5.current.contains(event.target) : true)
+            && !(event.target.closest && event.target.closest('.modal, .modal-backdrop'))) {
             closeModal()
           }
         };
@@ -141,6 +141,8 @@ const PictureMosaic = (props) => {
 
     useEffect(() => {
         const handleKeyDown = (event) => {
+            // Ignore keyboard shortcuts while the report dialog is open
+            if (reportOpen || (event.target.closest && event.target.closest('.modal'))) return
             if (event.key === 'ArrowRight') {
                 nextPicture()
             } else if (event.key === 'ArrowLeft') {
@@ -153,7 +155,7 @@ const PictureMosaic = (props) => {
         return () => {
             document.removeEventListener('keydown', handleKeyDown, true);
         };
-    }, [current]);
+    }, [current, reportOpen]);
 
     const ref = useRef(null);
     const ref2 = useRef(null);
