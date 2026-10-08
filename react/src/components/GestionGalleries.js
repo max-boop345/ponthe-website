@@ -117,7 +117,7 @@ export default function Gallery(){
               <form ref={ref2} onSubmit={onSubmit}>
                 <TextField className="add-modal-textfield" color='secondary' value={name} type="text" label="Nom" onChange={e =>  setName(e.target.value)} fullWidth/>
                 <TextField className="add-modal-textfield" color='secondary' value={description} type="text" label="Description" onChange={e =>  setDescription(e.target.value)} fullWidth/>
-                <Select className="add-modal-textfield" value={visibility} onChange={e => setVisibility(e.target.value)} label="Visiblité" fullWidth >
+                <Select className="add-modal-textfield" value={visibility} onChange={e => setVisibility(e.target.value)} label="Visibilité" fullWidth >
                   <MenuItem value={'privée'}>Privée</MenuItem>
                   <MenuItem value={'école'}>École</MenuItem>
                   <MenuItem value={'publique'}>Publique</MenuItem>

@@ -19,7 +19,7 @@ class DownloadPicsTest(TestCase):
     def setUpTestData(cls):
         year = Year.objects.create(name="2026-2027")
         cls.gallery = Gallery.objects.create(
-            name="Selection",
+            name="Sélection",
             slug=SLUG,
             description="",
             visibility=Gallery.Visibility.PUBLIC,
@@ -103,7 +103,7 @@ class DownloadPicsAccessTest(TestCase):
     def setUpTestData(cls):
         year = Year.objects.create(name="2026-2027")
         cls.private_gallery = Gallery.objects.create(
-            name="Selection privée",
+            name="Sélection privée",
             slug=PRIVATE_SLUG,
             description="",
             visibility=Gallery.Visibility.PRIVATE,
@@ -149,7 +149,7 @@ class DeletePicsTest(TestCase):
     def setUpTestData(cls):
         year = Year.objects.create(name="2026-2027")
         cls.gallery = Gallery.objects.create(
-            name="Selection delete",
+            name="Sélection delete",
             slug="select-delete",
             description="",
             visibility=Gallery.Visibility.PUBLIC,

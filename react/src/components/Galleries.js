@@ -1,14 +1,12 @@
 import React, {useState, useEffect} from 'react';
 import './../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Row, Container, Col } from 'react-bootstrap';
 import Cookies from 'js-cookie';
-import CustomNavbar from './Navbar'
-import {Select, MenuItem} from '@mui/material';
+import CustomNavbar from './Navbar';
 import GalleryMosaic from './GalleryMosaic';
 
-export default function Gallery(props) {
-  const [menuComponents, setMenuComponents] = useState([]);
+export default function Galleries(props) {
+  const [years, setYears] = useState([]);
   const [year, setYear] = useState('');
   const [result, setResult] = useState([]);
 
@@ -19,7 +17,7 @@ export default function Gallery(props) {
       'X-CSRFToken': Cookies.get('csrftoken')
     },
   };
-  console.log(props.view)
+
   useEffect(() => {
     fetch('/api/get_view?view=' + props.view, requestOptions)
       .then(res => res.json())
@@ -30,12 +28,8 @@ export default function Gallery(props) {
             .then(res => res.json())
             .then(
               (result) => {
-                let menuCompTemp = []
-                for (const year in result) {
-                  menuCompTemp.push(<MenuItem value={result[year].name}>{result[year].name}</MenuItem>)
-                }
-                setMenuComponents(menuCompTemp)
-                setYear(result[0].name)
+                setYears(result.map(y => y.name))
+                setYear(result.length > 0 ? result[0].name : '')
               },
               (error) => {
                 console.log(error)
@@ -48,22 +42,33 @@ export default function Gallery(props) {
       );
   }, [])
 
+  const titleStart = props.view === 'exposition' ? 'EXPOS' : 'GAL';
+  const titleEnd = props.view === 'exposition' ? 'ITIONS' : 'ERIES';
+
   return (
       <>
         <CustomNavbar/>
-        <Container>
-          <Row>
-          <Col xs="12" sm="6" md="4" lg="2">
-          <Select style={{marginTop: '100px', marginBottom: '40px', width: '100%', padding:0, height: "40px"}} value={year} onChange={e =>
-                {
-                    setYear(e.target.value)
-                }} label="Année">
-                    {menuComponents}
-        </Select>
-        </Col>
-          </Row>
-        </Container>
-        <GalleryMosaic result={result} year={year}/>
+        <div className="hero-banner">
+          <div className="hero-banner-inner">
+            <h1 className="hero-title">
+              <span className="visually-hidden">{titleStart + titleEnd}</span>
+              <span aria-hidden="true">{titleStart}<span className="hero-title-accent">{titleEnd}</span></span>
+            </h1>
+            <div className="year-pills">
+              {years.map(y => (
+                <button key={y} type="button"
+                  className={'year-pill' + (y === year ? ' active' : '')}
+                  aria-pressed={y === year}
+                  onClick={() => setYear(y)}>
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="gallery-grid-overlap">
+          {year && <GalleryMosaic result={result} year={year}/>}
+        </div>
       </>
     )
 }

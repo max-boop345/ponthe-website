@@ -2,6 +2,17 @@ body{
   background: white!important;
 }
 
+/* Design tokens Ponthé — validés sur le canvas Superdesign (Affiche arrondie / Hero osé) */
+:root{
+  --ponthe-blue: #8193F2;        /* pervenche : navbar, bandeaux, pieds de cartes */
+  --ponthe-blue-deep: #5B6FD6;   /* ombre dure des cartes affiche */
+  --ponthe-blue-dark: #4353B8;   /* titres de cartes */
+  --ponthe-yellow: rgb(255, 196, 37); /* accent : hover, pills actives, outline */
+  --ponthe-gray-border: #cfcfcf;
+  --ponthe-radius-banner: 32px;
+  --ponthe-radius-card: 16px;
+}
+
 .no-padding{
   padding-left: 0;
   padding-right: 0;
@@ -48,7 +59,7 @@ body{
 }
 
 .c-nav{
-  background-color: #8193F2;
+  background-color: var(--ponthe-blue);
   box-shadow: 0px 0px 7px 0px rgba(0,0,0,0.5);
 }
 
@@ -108,7 +119,8 @@ body{
 }
 
 .galleries-img{
-  height: 256px;
+  width: 100%;
+  height: 240px;
   object-fit: cover;
 }
 
@@ -280,7 +292,7 @@ body{
 }
 
 .introductive-content{
-
+  position: relative;
 }
 
 .img-legend{
@@ -294,7 +306,7 @@ body{
 }
 
 .img-legend:hover{
-  color:rgb(255 196 37);
+  color:var(--ponthe-yellow);
 }
 
 .img-legend-text{
@@ -323,7 +335,7 @@ body{
 
 .add-icon:hover,
 .add-icon:focus {
-  color:rgb(255 196 37);
+  color:var(--ponthe-yellow);
   cursor: pointer;
 }
 
@@ -368,17 +380,31 @@ body{
 
 .icon:hover,
 .icon:focus {
-  color:rgb(255 196 37);
+  color:var(--ponthe-yellow);
   cursor: pointer;
 }
 
 .gallery-title{
   margin-top: 50px;
   margin-bottom: 50px;
-  color: #8193F2;
+  color: var(--ponthe-blue);
   text-align: center;
   font-family: 'Inter';
-  font-weight: bold;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  font-size: clamp(32px, 5vw, 48px);
+}
+
+/* Le bouton « Sélectionner » (.select-toggle-icon) est en absolute centré sur 83% :
+   réserve sa zone pour éviter tout chevauchement avec un titre long (retour à la ligne). */
+@media screen and (min-width: 576px) {
+  .gallery-title{
+    max-width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow-wrap: break-word;
+  }
 }
 
 .big-button{
@@ -403,8 +429,8 @@ body{
 
 .big-button:focus,
 .big-button:hover{
-  color:rgb(255 196 37);
-  border-color: rgb(255 196 37);
+  color:var(--ponthe-yellow);
+  border-color: var(--ponthe-yellow);
 }
 
 .ytb-btn{
@@ -489,9 +515,9 @@ body{
 }
 
 .login-container{
-  border: 1px solid #cfcfcf;
-  border-radius: 3px;
-  box-shadow: 0px 0px 7px 0px rgba(0,0,0,0.1);
+  border: 1px solid var(--ponthe-gray-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   margin-top: 20%;
   padding-left: 40px;
   padding-right: 40px;
@@ -594,13 +620,31 @@ body{
   color: #9e9e9e;
 }
 
-/* Bouton « Sélectionner » du header de la page galerie */
+/* Bouton « Sélectionner » du header de la page galerie :
+   grand, posé aux deux-tiers entre le titre (centré) et le bord droit. */
 .select-toggle-icon{
+  position: absolute;
+  top: 36px;
+  left: 83%;
+  transform: translateX(-50%);
   cursor: pointer;
-  color: #d8d8d8;
-  font-size: 2rem;
-  vertical-align: middle;
-  margin-left: 12px;
+  color: var(--ponthe-blue);
+  font-size: clamp(48px, 7vw, 80px);
+  transition: color 0.2s ease;
+}
+
+.select-toggle-icon:hover{
+  color: var(--ponthe-blue-dark);
+}
+
+@media screen and (max-width: 575px) {
+  .select-toggle-icon{
+    position: static;
+    transform: none;
+    display: block;
+    margin: 12px auto 0;
+    font-size: 2.5rem;
+  }
 }
 
 /* Barre d'actions de la sélection (compteur + boutons) */
@@ -614,4 +658,415 @@ body{
 /* Icône dont le mode associé est actif (ex. filtre signalements) */
 .icon-active{
   color: #1976d2;
+}
+
+/* ===== Page Galeries « Affiche arrondie » (draft fde67747) ===== */
+
+.hero-banner{
+  background-color: var(--ponthe-blue);
+  border-bottom-left-radius: var(--ponthe-radius-banner);
+  border-bottom-right-radius: var(--ponthe-radius-banner);
+  position: relative;
+}
+
+.hero-banner-inner{
+  max-width: 1140px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 48px 12px 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.hero-title{
+  font-family: 'Inter';
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  color: white;
+  font-size: clamp(48px, 8vw, 80px);
+  margin: 0;
+}
+
+.hero-title-accent{
+  color: var(--ponthe-yellow);
+}
+
+.year-pills{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.year-pill{
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 50px;
+  background: white;
+  color: var(--ponthe-blue);
+  font-family: 'Inter';
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.year-pill.active{
+  background: var(--ponthe-yellow);
+  color: black;
+}
+
+.year-pill:not(.active):hover{
+  transform: translateY(-2px);
+}
+
+.year-pill:focus-visible{
+  outline: 3px solid var(--ponthe-yellow);
+  outline-offset: 2px;
+}
+
+.gallery-grid-overlap{
+  max-width: 1140px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: -40px;
+  position: relative;
+  z-index: 10;
+  padding: 0 12px 96px;
+}
+
+.gallery-card-affiche{
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 4px solid white;
+  border-radius: var(--ponthe-radius-card);
+  overflow: hidden;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease-out;
+  height: 100%;
+}
+
+.gallery-card-affiche:hover{
+  transform: translate(-4px, -4px);
+  box-shadow: 8px 8px 0 var(--ponthe-blue-deep);
+}
+
+.gallery-image-container{
+  position: relative;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+}
+
+.gallery-card-footer-strip{
+  height: 10px;
+  background-color: var(--ponthe-blue);
+}
+
+.gallery-title-label{
+  padding: 12px 16px 8px;
+  font-family: 'Inter';
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ponthe-blue-dark);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+@media screen and (max-width: 575px) {
+  .hero-banner-inner{
+    padding: 32px 12px 48px;
+  }
+
+  .year-pills{
+    padding-bottom: 0;
+  }
+}
+
+/* ===== Accueil « Hero osé sans voile » (draft 6376c5fd) ===== */
+
+.hero-section{
+  /* 100vh moins la navbar (~64px, en flux au-dessus) : garde le chevron de scroll au-dessus de la fold */
+  min-height: calc(100vh - 64px);
+  min-height: calc(100svh - 64px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+  padding: 120px 16px 48px;
+}
+
+.hero-content{
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.poster-title-container{
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.poster-title{
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: clamp(56px, 12vw, 120px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: white;
+  margin: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.poster-title-outline{
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: clamp(56px, 12vw, 120px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--ponthe-yellow);
+  z-index: 5;
+  user-select: none;
+  pointer-events: none;
+}
+
+.badge-hero-yellow{
+  position: absolute;
+  right: -40px;
+  top: -10px;
+  z-index: 20;
+  background-color: var(--ponthe-yellow);
+  color: black;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.hero-subtitle{
+  color: white;
+  font-family: 'Inter';
+  font-size: clamp(16px, 2.5vw, 24px);
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  margin: 0 0 48px;
+}
+
+.hero-pills{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.pill-btn{
+  text-transform: uppercase;
+  padding: 20px 40px;
+  font-family: 'Inter';
+  font-weight: 700;
+  font-size: 20px;
+  border-radius: 50px;
+  border: 2px solid transparent;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.pill-yellow{
+  background-color: var(--ponthe-yellow);
+  color: black;
+}
+
+.pill-yellow:hover,
+.pill-yellow:focus{
+  background-color: white;
+  color: black;
+}
+
+.pill-white{
+  background-color: white;
+  color: black;
+}
+
+.pill-white:hover,
+.pill-white:focus{
+  background-color: var(--ponthe-yellow);
+  color: black;
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+
+.scroll-chevron{
+  color: var(--ponthe-yellow);
+  font-size: 3rem;
+  margin-top: 32px;
+  animation: bounce-slow 2s infinite;
+}
+
+.team-section{
+  background: white;
+  overflow: hidden;
+  padding: 96px 16px 0;
+}
+
+.team-section-inner{
+  max-width: 1152px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.team-img-rounded{
+  border-radius: 24px;
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  transform: rotate(-1deg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  margin-bottom: 80px;
+}
+
+.team-section-title{
+  text-align: center;
+  font-family: 'Inter';
+  font-weight: 900;
+  font-size: clamp(32px, 5vw, 48px);
+  color: var(--ponthe-blue);
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  margin: 0 0 64px;
+}
+
+.roster-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  padding-bottom: 96px;
+}
+
+@media screen and (min-width: 768px) {
+  .roster-grid{
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.roster-column{
+  display: flex;
+  flex-direction: column;
+}
+
+.roster-group-title{
+  font-family: 'Inter';
+  font-size: 12px;
+  font-weight: 700;
+  color: #9e9e9e;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin: 0 0 16px;
+}
+
+.roster-group-title:not(:first-child){
+  margin-top: 48px;
+}
+
+.roster-card-item{
+  border: 1px solid var(--ponthe-gray-border);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.roster-card-item:hover{
+  border-color: var(--ponthe-blue);
+  box-shadow: 0 4px 12px rgba(129, 147, 242, 0.1);
+}
+
+.roster-card-item p{
+  margin: 0 0 8px;
+}
+
+.roster-card-item p:last-child{
+  margin-bottom: 0;
+}
+
+.roster-card-item strong{
+  color: #212529;
+}
+
+.roster-subtitle{
+  font-weight: 700;
+  font-size: 18px;
+  color: #212529;
+}
+
+.roster-names{
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.site-footer{
+  background: white;
+  padding: 48px 16px;
+  text-align: center;
+  color: #9e9e9e;
+  font-size: 14px;
+  border-top: 1px solid #f1f1f1;
+}
+
+@media screen and (max-width: 575px) {
+  .badge-hero-yellow{
+    right: 0;
+    font-size: 18px;
+  }
+
+  .pill-btn{
+    padding: 16px 28px;
+    font-size: 16px;
+  }
+}
+
+/* ===== Diffusion du style vers les pages non redessinées ===== */
+
+.page-header{
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 48px 12px 32px;
+}
+
+.page-header-title{
+  font-family: 'Inter';
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  color: var(--ponthe-blue);
+  font-size: clamp(40px, 6vw, 56px);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-chevron{
+    animation: none;
+  }
 }

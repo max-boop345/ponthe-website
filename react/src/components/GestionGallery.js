@@ -446,7 +446,7 @@ export default function Gallery({props}){
               {
                 setVisibility(e.target.value)
                 changeVisibility(e.target.value)
-              }} label="Visiblité">
+              }} label="Visibilité">
                   <MenuItem value={'privée'}>Privée</MenuItem>
                   <MenuItem value={'école'}>École</MenuItem>
                   <MenuItem value={'publique'}>Publique</MenuItem>
@@ -455,7 +455,7 @@ export default function Gallery({props}){
               {
                 setView(e.target.value)
                 changeView(e.target.value)
-              }} label="Visiblité">
+              }} label="Vue">
                   <MenuItem value={'galerie'}>Galerie</MenuItem>
                   <MenuItem value={'exposition'}>Exposition</MenuItem>
                 </Select>

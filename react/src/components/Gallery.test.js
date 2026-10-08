@@ -131,4 +131,11 @@ describe('Gallery selection mode', () => {
     fireEvent.click(screen.getByTestId('ChecklistIcon'));
     expect(screen.getByText('0 photo(s) sélectionnée(s)')).toBeInTheDocument();
   });
+
+  test('App.css reserves room for the select-toggle button next to the title', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'App.css'), 'utf8');
+    expect(css).toMatch(/@media[^{]*min-width:\s*576px[^}]*\.gallery-title\s*\{[^}]*max-width:\s*60%/);
+  });
 });
