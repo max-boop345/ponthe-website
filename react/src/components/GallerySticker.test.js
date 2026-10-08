@@ -54,4 +54,15 @@ describe('GallerySticker', () => {
     fireEvent.click(container.querySelector('.gallery-sticker'));
     expect(modalFunc).toHaveBeenCalledWith(expect.anything(), defaultProps.img);
   });
+
+  test('compact mode produces class names that match CSS rules in App.css', () => {
+    // Ce test sert de contrat : si on renomme les classes CSS, ce test échoue
+    // et rappelle de mettre à jour App.css en conséquence.
+    const { container } = render(<GallerySticker {...defaultProps} compact={true} />);
+    const sticker = container.querySelector('.gallery-sticker');
+    const img = container.querySelector('.gallery-img');
+    // Les classes doivent être exactement celles définies dans App.css
+    expect(sticker.className).toBe('gallery-sticker compact');
+    expect(img.className).toBe('gallery-img compact');
+  });
 });
