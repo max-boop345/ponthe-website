@@ -768,11 +768,6 @@ body{
   align-items: center;
   text-align: center;
   padding: 120px 16px 48px;
-  background-image:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 60%, rgba(0, 0, 0, 0.75) 100%),
-    url('/static/assets/img/028_group.jpg');
-  background-size: cover;
-  background-position: center;
 }
 
 .hero-content{

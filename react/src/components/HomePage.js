@@ -9,7 +9,15 @@ export default function HomePage (){
         <>
             <CustomNavbar/>
             <main>
-                <section className="hero-section">
+                <section
+                    className="hero-section"
+                    style={{
+                        backgroundImage:
+                            "linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 60%, rgba(0, 0, 0, 0.75) 100%), url('/static/assets/img/028_group.jpg')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                >
                     <div className="hero-content">
                         <div className="poster-title-container">
                             <div className="badge-hero-yellow">028</div>
