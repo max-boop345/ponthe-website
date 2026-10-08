@@ -979,33 +979,47 @@ git add react/src/App.css react/src/components/GestionGallery.test.js && git com
 
 ---
 
-## Task 4: E2E manuel et vérification
+## Task 4: E2E et vérification finale — FAIT
 
-- [ ] **Step 1: Lancer les services**
+L'E2E navigateur complet (docker compose + clics manuels) a été remplacé par un E2E HTTP réel contre le code de la branche : `manage.py runserver 127.0.0.1:8001` avec un settings local `galerie/settings_e2e` (SQLite fichier, cache locmem, Celery eager, MEDIA_ROOT dans /tmp — fichier non commité), puis une session curl complète (login réel, cookie CSRF, POST multipart). Les items purement navigateur de la checklist originale sont couverts par les tests jest (16/16).
 
-```bash
-cd /Users/maxime/mistral_sb/ponthe-website && docker compose up -d
-```
-
-- [ ] **Step 2: Checklist de vérification manuelle**
-
-Ouvrir `http://localhost:8000/gestion/gallery/<un-slug-existant>` et cocher :
-
-- [ ] Cliquer sur le bouton "+" (ajouter) → le modal s'ouvre
-- [ ] Cliquer "Lancer l'envoi" sans sélectionner de fichier → message "Veuillez sélectionner un fichier .zip."
-- [ ] Sélectionner un fichier `.txt` → upload → message "Le fichier doit être une archive .zip."
-- [ ] Sélectionner un fichier `.zip` vide (0 octet) → message "Le fichier envoyé est vide."
-- [ ] Sélectionner un fichier `.zip` qui n'est pas un vrai zip → message "Le fichier envoyé n'est pas un zip valide."
-- [ ] Sélectionner un vrai `.zip` avec des photos → succès, modal se ferme, page se recharge
-- [ ] Pendant l'upload, le bouton affiche "Envoi en cours..." et est désactivé
-- [ ] Fermer le modal après une erreur, le rouvrir → le message d'erreur a disparu
-- [ ] Couper le réseau (DevTools → Offline) pendant l'upload → message "Erreur réseau"
-
-- [ ] **Step 3: Final commit**
+**Setup E2E (local, non commité) :**
 
 ```bash
-git add -A && git commit -m "test(gestion): manual E2E verification of upload error messages"
+mkdir -p /tmp/ponthe-e2e
+cd back && ../venv/bin/python manage.py migrate --settings=galerie.settings_e2e
+PYTHONPATH=$PWD ../venv/bin/python /tmp/ponthe-e2e/setup.py   # superuser admin, galerie "sobriete", fixtures
+../venv/bin/python manage.py runserver 127.0.0.1:8001 --settings=galerie.settings_e2e --noreload
 ```
+
+**Résultats (tous OK) :**
+
+| # | Vérification | Résultat |
+|---|-------------|----------|
+| 1 | GET `/login/` | 200, cookie `csrftoken` posé |
+| 2 | POST `/login/` (admin) | 302 → `/galleries/` (session créée) |
+| 3 | GET `/gestion/gallery/sobriete` (connecté) | 200, `gallery_slug = 'sobriete'` injecté |
+| 4 | POST AJAX `photo.txt` | 400 `application/json` — « Le fichier doit être une archive .zip. » |
+| 5 | POST AJAX `empty.zip` (0 octet) | 400 JSON — « Le fichier envoyé est vide. » |
+| 6 | POST AJAX `fake.zip` (pas un zip) | 400 JSON — « Le fichier envoyé n'est pas un zip valide. » |
+| 7 | POST AJAX `good.zip` (vrai zip, 2 jpgs) | 200 JSON `{"status": "success"}` + `a.jpg`/`b.jpg` extraits dans `uploads/` et miniatures générées (Celery eager) |
+| 8 | POST AJAX vers `/gestion/gallery/nope` | 404 JSON — « Galerie « nope » introuvable. » |
+| 9 | POST `fake.zip` SANS header AJAX | 400 `text/html` « Le fichier envoyé n'est pas un zip valide. » (fallback rétrocompatible) |
+| 10 | POST AJAX sans session (CSRF valide) | 302 → `/login/?next=...` (auth toujours appliquée) |
+| 11 | GET page gestion sans session | 302 → `/login/?next=...` |
+
+**Correspondance checklist navigateur → tests jest :** modal s'ouvre / pas de fichier / bouton « Envoi en cours... » désactivé / erreur effacée à la réouverture / message « Erreur réseau » / succès ferme le modal et recharge / style `.upload-error` → tests `GestionGallery.test.js` (10 upload + 2 CSS). Le cas « > 500 Mo » est couvert côté backend par `test_ajax_file_too_large_returns_json_error` (constante patchée, pas de vrai fichier de 500 Mo en E2E).
+
+**Revue finale de la branche entière (diff 2ace39a..HEAD) :**
+
+- Les 8 cas du tableau « Cas d'erreur gérés » sont tous implémentés (backend + frontend).
+- Contrat frontend↔backend vérifié : URL `/gestion/gallery/<slug>`, champ `zipfile`, headers `X-CSRFToken` + `X-Requested-With: XMLHttpRequest`, contrat `{status, message}`.
+- Pas de régression : fallback non-AJAX (`HttpResponseBadRequest`/`Http404`) préservé ; le reste de `GestionGallery.js` (suppression, visibilité, sélecteurs, navigation modale) et `index_view` sont intacts.
+- Suites de tests : backend 62/62 OK ; frontend 16/16 (`App.test.js` en échec préexistant, non lié — aucun changement sur Navbar/App.test.js dans ce diff).
+- `git status` : seuls `back/galerie/settings_test.py`, `back/galerie/settings_e2e.py` et `venv/` sont non suivis — outillage local, à ne PAS commiter.
+- Sécurité : validations avant `fs.save` (les rejets ne touchent pas le disque), nom de fichier sanitizé par `FileSystemStorage.save` (pattern inchangé), limite 500 Mo, `@user_passes_test(is_manager)` toujours en place (vérifié E2E #10/#11), message d'erreur rendu en nœud texte React (pas de XSS).
+
+**Verdict : READY TO PUSH.**
 
 ---
 
@@ -1015,7 +1029,7 @@ git add -A && git commit -m "test(gestion): manual E2E verification of upload er
 |---------|-------------|-------|
 | `back/gestion/views.py` | JSON responses, validations (vide, extension, taille), JSON 500 sur erreur inattendue | `back/test/test_import.py` — 9 nouveaux tests |
 | `back/test/test_import.py` | **Modifié** — classe `UploadErrorMessagesTest` + base `UploadTestCase` partagée | 9 tests : non-zip, vide, mauvaise extension, trop gros, succès, galerie inconnue, fallback non-AJAX, erreur inattendue AJAX (JSON 500), erreur inattendue non-AJAX (raise) |
-| `react/src/components/GestionGallery.js` | fetch + FormData, états `uploadError`/`uploading`/`selectedFile`, `handleUpload` | `GestionGallery.test.js` — 8 nouveaux tests |
+| `react/src/components/GestionGallery.js` | fetch + FormData, états `uploadError`/`uploading`/`selectedFile`, `handleUpload` | `GestionGallery.test.js` — 12 nouveaux tests |
 | `react/src/components/GestionGallery.test.js` | **Créé** — mocks + 4 tests de base + 10 tests upload + 2 tests contrat CSS (Task 3) | erreur serveur, fichier vide, mauvaise extension, erreur réseau, succès+reload, bouton désactivé, pas de fichier, erreur cleared on reopen, réponse non JSON, réouverture efface le fichier, classe CSS sur l'élément, règle CSS dans App.css |
 | `react/src/App.css` | `.upload-error` (style rouge comme `.login-error`) | Test de contrat CSS |
 
