@@ -81,4 +81,34 @@ describe('Galleries (page liste des galeries)', () => {
     );
     expect(screen.getByText('ITIONS')).toBeInTheDocument();
   });
+
+  test('no years available renders no pill and no mosaic (no crash)', async () => {
+    global.fetch = jest.fn((url) => {
+      if (url.includes('/api/get_view')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockGalleries) });
+      }
+      if (url.includes('/api/years')) {
+        return Promise.resolve({ json: () => Promise.resolve([]) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve([]) });
+    });
+    render(<Galleries view="galerie" />);
+    // Laisse le fetch /api/years se résoudre (retour vide)
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/years'),
+        expect.anything()
+      )
+    );
+    expect(screen.getByText('GALRIES')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '2025-2026' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('gallery-mosaic')).not.toBeInTheDocument();
+  });
+
+  test('App.css defines a visible focus style for year pills', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'App.css'), 'utf8');
+    expect(css).toMatch(/\.year-pill:focus-visible\s*\{/);
+  });
 });

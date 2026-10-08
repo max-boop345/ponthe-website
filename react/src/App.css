@@ -396,6 +396,17 @@ body{
   font-size: clamp(32px, 5vw, 48px);
 }
 
+/* Le bouton « Sélectionner » (.select-toggle-icon) est en absolute centré sur 83% :
+   réserve sa zone pour éviter tout chevauchement avec un titre long (retour à la ligne). */
+@media screen and (min-width: 576px) {
+  .gallery-title{
+    max-width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow-wrap: break-word;
+  }
+}
+
 .big-button{
   width:max-content;
   max-width: calc(100% - 32px);
@@ -715,6 +726,11 @@ body{
   transform: translateY(-2px);
 }
 
+.year-pill:focus-visible{
+  outline: 3px solid var(--ponthe-yellow);
+  outline-offset: 2px;
+}
+
 .gallery-grid-overlap{
   max-width: 1140px;
   margin-left: auto;
@@ -778,8 +794,9 @@ body{
 /* ===== Accueil « Hero osé sans voile » (draft 6376c5fd) ===== */
 
 .hero-section{
-  min-height: 100vh;
-  min-height: 100svh;
+  /* 100vh moins la navbar (~64px, en flux au-dessus) : garde le chevron de scroll au-dessus de la fold */
+  min-height: calc(100vh - 64px);
+  min-height: calc(100svh - 64px);
   position: relative;
   display: flex;
   flex-direction: column;

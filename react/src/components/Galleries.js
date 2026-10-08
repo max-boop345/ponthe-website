@@ -29,7 +29,7 @@ export default function Galleries(props) {
             .then(
               (result) => {
                 setYears(result.map(y => y.name))
-                setYear(result[0].name)
+                setYear(result.length > 0 ? result[0].name : '')
               },
               (error) => {
                 console.log(error)

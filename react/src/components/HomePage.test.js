@@ -58,4 +58,12 @@ describe('HomePage (hero osé sans voile)', () => {
       screen.getByText(/Club Ponthé — École nationale des ponts et chaussées/i)
     ).toBeInTheDocument();
   });
+
+  test('App.css keeps the hero above the fold (subtracts the navbar height)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'App.css'), 'utf8');
+    expect(css).toMatch(/\.hero-section\s*\{[^}]*calc\(100vh - 64px\)/);
+    expect(css).toMatch(/\.hero-section\s*\{[^}]*calc\(100svh - 64px\)/);
+  });
 });
