@@ -1,4 +1,5 @@
 from api.permissions import is_manager
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -81,3 +82,30 @@ class File(models.Model):
 
 class Material(models.Model):
     name = models.CharField(max_length=1000)
+
+
+class Report(models.Model):
+    """Un signalement de photo par un utilisateur connecté."""
+    id = models.AutoField(primary_key=True)
+    file = models.ForeignKey(File, on_delete=models.CASCADE)
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    class Category(models.TextChoices):
+        INAPPROPRIATE = "inapproprié"
+        OFF_TOPIC = "hors sujet"
+        QUALITY = "qualité"
+        OTHER = "autre"
+
+    category = models.CharField(
+        blank=False, default=Category.OTHER, choices=Category.choices, max_length=20
+    )
+    message = models.CharField(blank=True, default="", max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            # Signaler la même photo dix fois n'aide pas la modération.
+            models.UniqueConstraint(
+                fields=["file", "reporter"], name="one_report_per_user_per_file"
+            )
+        ]
