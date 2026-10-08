@@ -26,8 +26,9 @@ export default function Gallery({props}){
     const [addModalState, setaddModalState] = useState(false);
     const [visibility, setVisibility] = useState('privée');
     const [view, setView] = useState('gallery');
-
-    const cookie = Cookies.get('csrftoken')
+    const [uploadError, setUploadError] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const requestOptions = {
       method: 'POST',
@@ -49,12 +50,54 @@ export default function Gallery({props}){
     };
 
     const openAddModal = () => {
+      setUploadError('');
+      setSelectedFile(null);
       setaddModalState(true)
     }
 
     const closeAddModal = () => {
       setaddModalState(false)
     }
+
+    const handleUpload = async (e) => {
+      e.preventDefault();
+      setUploadError('');
+
+      if (!selectedFile) {
+        setUploadError('Veuillez sélectionner un fichier .zip.');
+        return;
+      }
+
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append('zipfile', selectedFile);
+
+      try {
+        const response = await fetch('/gestion/gallery/' + gallery_slug, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': Cookies.get('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.status === 'error') {
+          setUploadError(data.message || 'Une erreur est survenue lors de l\'envoi.');
+        } else {
+          // Succès : fermer le modal et recharger la page
+          closeAddModal();
+          window.location.reload(false);
+        }
+      } catch (err) {
+        setUploadError('Erreur réseau : impossible de contacter le serveur.');
+      } finally {
+        setUploading(false);
+      }
+    };
 
     //Goto next picture in modal
     const nextPicture = () => {
@@ -274,10 +317,21 @@ export default function Gallery({props}){
           <div className='pic-modal'>
             <div ref={ref} className='add-modal-content'>
               <span className='close-white-modal' onClick={closeAddModal}>&times;</span>
-              <form method="POST" class="post-form" enctype="multipart/form-data">
-                  <input type="hidden" name="csrfmiddlewaretoken" value={cookie} />
-                  <input type='file' name='zipfile'/>
-                  <button type="submit" className="login-button">Lancer l'envoi</button>
+              <form className="post-form" onSubmit={handleUpload}>
+                  <input
+                    type='file'
+                    name='zipfile'
+                    accept='.zip'
+                    onChange={(e) => setSelectedFile(e.target.files[0] || null)}
+                  />
+                  {uploadError && <p className="upload-error">{uploadError}</p>}
+                  <button
+                    type="submit"
+                    className="login-button"
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Envoi en cours...' : "Lancer l'envoi"}
+                  </button>
                 </form>
             </div>
           </div>

@@ -670,7 +670,7 @@ describe('GestionGallery', () => {
     fireEvent.click(screen.getByText("Lancer l'envoi"));
 
     await waitFor(() => {
-      expect(screen.getByText(/sélectionnez/i)).toBeInTheDocument();
+      expect(screen.getByText(/sélectionn/i)).toBeInTheDocument();
     });
   });
 
@@ -731,7 +731,7 @@ describe('GestionGallery', () => {
 ```bash
 cd react && CI=true npx react-scripts test src/components/GestionGallery.test.js --watchAll=false 2>&1 | tail -40
 ```
-Expected: Les 7 nouveaux tests échouent (pas de gestion d'erreur, formulaire HTML classique).
+Expected: Les 8 tests upload échouent (pas de gestion d'erreur, formulaire HTML classique) ; les 4 tests de base passent.
 
 - [ ] **Step 3: Implement fetch-based upload with error display**
 
@@ -847,7 +847,7 @@ Par :
 ```bash
 cd react && CI=true npx react-scripts test src/components/GestionGallery.test.js --watchAll=false 2>&1 | tail -30
 ```
-Expected: PASS — 11 tests (4 de base + 7 upload).
+Expected: PASS — 12 tests (4 de base + 8 upload).
 
 - [ ] **Step 5: Run ALL frontend tests**
 
@@ -967,7 +967,7 @@ Expected: "OK: .upload-error present in App.css"
 ```bash
 cd react && CI=true npx react-scripts test src/components/GestionGallery.test.js --watchAll=false 2>&1 | tail -10
 ```
-Expected: PASS — 12 tests (4 de base + 7 upload + 1 contrat CSS).
+Expected: PASS — 13 tests (4 de base + 8 upload + 1 contrat CSS).
 
 - [ ] **Step 6: Commit**
 
@@ -1014,10 +1014,10 @@ git add -A && git commit -m "test(gestion): manual E2E verification of upload er
 | `back/gestion/views.py` | JSON responses, validations (vide, extension, taille), JSON 500 sur erreur inattendue | `back/test/test_import.py` — 9 nouveaux tests |
 | `back/test/test_import.py` | **Modifié** — classe `UploadErrorMessagesTest` + base `UploadTestCase` partagée | 9 tests : non-zip, vide, mauvaise extension, trop gros, succès, galerie inconnue, fallback non-AJAX, erreur inattendue AJAX (JSON 500), erreur inattendue non-AJAX (raise) |
 | `react/src/components/GestionGallery.js` | fetch + FormData, états `uploadError`/`uploading`/`selectedFile`, `handleUpload` | `GestionGallery.test.js` — 8 nouveaux tests |
-| `react/src/components/GestionGallery.test.js` | **Créé** — mocks + 4 tests de base + 8 tests upload | erreur serveur, fichier vide, mauvaise extension, erreur réseau, succès+reload, bouton désactivé, pas de fichier, erreur cleared on reopen, CSS contract |
+| `react/src/components/GestionGallery.test.js` | **Créé** — mocks + 4 tests de base + 8 tests upload + 1 test contrat CSS (Task 3) | erreur serveur, fichier vide, mauvaise extension, erreur réseau, succès+reload, bouton désactivé, pas de fichier, erreur cleared on reopen, CSS contract |
 | `react/src/App.css` | `.upload-error` (style rouge comme `.login-error`) | Test de contrat CSS |
 
-**Total : 17 nouveaux tests** (9 backend + 8 frontend) couvrant chaque cas d'erreur et chaque ligne de code ajoutée.
+**Total : 18 nouveaux tests** (9 backend + 9 frontend) couvrant chaque cas d'erreur et chaque ligne de code ajoutée.
 
 ## Flux de données
 
