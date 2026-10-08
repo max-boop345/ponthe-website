@@ -565,4 +565,53 @@ describe('GestionGallery', () => {
       expect(screen.getByText(/sélectionn/i)).toBeInTheDocument();
     });
   });
+
+  // --- Contrats CSS (TODO #8) ---
+
+  test('upload error element has the upload-error CSS class', async () => {
+    global.fetch = jest.fn((url, options) => {
+      if (url.includes('/gestion/gallery/') && options && options.method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({ status: 'error', message: 'Test error' }),
+        });
+      }
+      if (url.includes('/api/gallery/pics/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
+      }
+      if (url.includes('/api/gallery/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) });
+    });
+
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    const addButton = screen.getByTestId('AddCircleOutlineIcon');
+    fireEvent.click(addButton);
+    await waitFor(() => {
+      expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
+    });
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = new File(['x'], 'test.zip', { type: 'application/zip' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    fireEvent.click(screen.getByText("Lancer l'envoi"));
+
+    await waitFor(() => {
+      const errorEl = screen.getByText('Test error');
+      expect(errorEl).toHaveClass('upload-error');
+    });
+  });
+
+  test('App.css defines the .upload-error rule', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'App.css'), 'utf8');
+    expect(css).toMatch(/\.upload-error\s*\{/);
+  });
 });

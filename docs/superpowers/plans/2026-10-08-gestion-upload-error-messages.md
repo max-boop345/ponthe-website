@@ -875,11 +875,11 @@ git add react/src/components/GestionGallery.js react/src/components/GestionGalle
 
 **Files:**
 - Modify: `react/src/App.css`
-- Modify: `react/src/components/GestionGallery.test.js` (test de contrat CSS)
+- Modify: `react/src/components/GestionGallery.test.js` (2 tests de contrat CSS)
 
-- [ ] **Step 1: Write the failing CSS contract test**
+- [ ] **Step 1: Write the CSS contract tests**
 
-Ajouter à la fin de `react/src/components/GestionGallery.test.js` :
+Ajouter à la fin de `react/src/components/GestionGallery.test.js` (avant la fermeture du `describe`). Deux tests : le premier vérifie le contrat DOM ↔ CSS (l'élément d'erreur porte la classe — il passe déjà, le composant la rend depuis Task 2) ; le second lit `App.css` sur disque et vérifie que la règle `.upload-error` existe — c'est celui-ci qui doit ÉCHOUER tant que la règle n'est pas ajoutée (`toHaveClass` ne peut pas détecter une règle CSS manquante, d'où ce second test) :
 
 ```js
   test('upload error element has the upload-error CSS class', async () => {
@@ -921,18 +921,25 @@ Ajouter à la fin de `react/src/components/GestionGallery.test.js` :
       expect(errorEl).toHaveClass('upload-error');
     });
   });
+
+  test('App.css defines the .upload-error rule', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'App.css'), 'utf8');
+    expect(css).toMatch(/\.upload-error\s*\{/);
+  });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: Run tests to verify the stylesheet test fails**
 
 ```bash
-cd react && CI=true npx react-scripts test src/components/GestionGallery.test.js --watchAll=false -t "upload-error CSS class" 2>&1 | tail -15
+cd react && CI=true npx react-scripts test src/components/GestionGallery.test.js --watchAll=false -t "App.css defines" 2>&1 | tail -15
 ```
-Expected: FAIL — la classe `upload-error` n'existe pas encore dans App.css.
+Expected: FAIL — aucune règle `.upload-error` dans App.css. Le test DOM `toHaveClass` passe déjà.
 
 - [ ] **Step 3: Add CSS rule**
 
-Ajouter dans `react/src/App.css` (après `.login-error`, vers la ligne 530) :
+Ajouter dans `react/src/App.css` (à la fin du fichier, après `.login-error`, ligne 536) :
 
 ```css
 /* Messages d'erreur upload (TODO #8) */
@@ -950,24 +957,19 @@ Ajouter dans `react/src/App.css` (après `.login-error`, vers la ligne 530) :
 }
 ```
 
-- [ ] **Step 4: Verify CSS is present**
+- [ ] **Step 4: Run the stylesheet test again**
 
 ```bash
-cd react && node -e "
-const fs = require('fs');
-const css = fs.readFileSync('src/App.css', 'utf8');
-if (!css.includes('.upload-error')) { console.error('MISSING .upload-error'); process.exit(1); }
-console.log('OK: .upload-error present in App.css');
-"
+cd react && CI=true npx react-scripts test src/components/GestionGallery.test.js --watchAll=false -t "App.css defines" 2>&1 | tail -8
 ```
-Expected: "OK: .upload-error present in App.css"
+Expected: PASS.
 
 - [ ] **Step 5: Run all tests**
 
 ```bash
 cd react && CI=true npx react-scripts test src/components/GestionGallery.test.js --watchAll=false 2>&1 | tail -10
 ```
-Expected: PASS — 13 tests (4 de base + 8 upload + 1 contrat CSS).
+Expected: PASS — 16 tests (4 de base + 10 upload + 2 contrats CSS).
 
 - [ ] **Step 6: Commit**
 
@@ -1014,10 +1016,10 @@ git add -A && git commit -m "test(gestion): manual E2E verification of upload er
 | `back/gestion/views.py` | JSON responses, validations (vide, extension, taille), JSON 500 sur erreur inattendue | `back/test/test_import.py` — 9 nouveaux tests |
 | `back/test/test_import.py` | **Modifié** — classe `UploadErrorMessagesTest` + base `UploadTestCase` partagée | 9 tests : non-zip, vide, mauvaise extension, trop gros, succès, galerie inconnue, fallback non-AJAX, erreur inattendue AJAX (JSON 500), erreur inattendue non-AJAX (raise) |
 | `react/src/components/GestionGallery.js` | fetch + FormData, états `uploadError`/`uploading`/`selectedFile`, `handleUpload` | `GestionGallery.test.js` — 8 nouveaux tests |
-| `react/src/components/GestionGallery.test.js` | **Créé** — mocks + 4 tests de base + 10 tests upload + 1 test contrat CSS (Task 3) | erreur serveur, fichier vide, mauvaise extension, erreur réseau, succès+reload, bouton désactivé, pas de fichier, erreur cleared on reopen, réponse non JSON, réouverture efface le fichier, CSS contract |
+| `react/src/components/GestionGallery.test.js` | **Créé** — mocks + 4 tests de base + 10 tests upload + 2 tests contrat CSS (Task 3) | erreur serveur, fichier vide, mauvaise extension, erreur réseau, succès+reload, bouton désactivé, pas de fichier, erreur cleared on reopen, réponse non JSON, réouverture efface le fichier, classe CSS sur l'élément, règle CSS dans App.css |
 | `react/src/App.css` | `.upload-error` (style rouge comme `.login-error`) | Test de contrat CSS |
 
-**Total : 20 nouveaux tests** (9 backend + 11 frontend) couvrant chaque cas d'erreur et chaque ligne de code ajoutée.
+**Total : 21 nouveaux tests** (9 backend + 12 frontend) couvrant chaque cas d'erreur et chaque ligne de code ajoutée.
 
 ## Retours de revue (appliqués après Task 1 et Task 2)
 

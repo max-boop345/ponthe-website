@@ -535,3 +535,17 @@ body{
   border-left: 3px solid rgb(255, 0, 0);
   border-radius: 5px;
 }
+
+/* Messages d'erreur upload (TODO #8) */
+.upload-error{
+  background-color: rgb(247, 103, 103);
+  padding-left:10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  font-family: 'Inter';
+  color:white;
+  border-left: 3px solid rgb(255, 0, 0);
+  border-radius: 5px;
+}
