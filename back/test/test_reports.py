@@ -154,3 +154,63 @@ class ReportApiTest(TestCase):
         self.client.force_login(self.manager)
         response = self.report(slug="private")
         self.assertEqual(response.status_code, 201)
+
+
+class ReportsListApiTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        year = Year.objects.create(name="2026-2027")
+        cls.gallery = Gallery.objects.create(
+            name="Gallery",
+            slug="gallery",
+            description="",
+            visibility=Gallery.Visibility.PUBLIC,
+            year=year,
+        )
+        cls.file = File.objects.create(
+            file_name="picture",
+            file_extension="jpg",
+            file_full_name="picture.jpg",
+            link="/media/gallery",
+            gallery=cls.gallery,
+        )
+        cls.student = User.objects.create_user("student")
+        cls.other_student = User.objects.create_user("other_student")
+        cls.manager = User.objects.create_user("manager", is_staff=True)
+        cls.report_1 = Report.objects.create(
+            file=cls.file,
+            reporter=cls.student,
+            category=Report.Category.INAPPROPRIATE,
+            message="problème",
+        )
+        cls.report_2 = Report.objects.create(
+            file=cls.file, reporter=cls.other_student, category=Report.Category.QUALITY
+        )
+
+    def test_reports_list_requires_manager(self):
+        self.client.force_login(self.student)
+        response = post_json(self.client, "/api/gallery/reports/", {"slug": "gallery"})
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_cannot_list_reports(self):
+        self.client.logout()
+        response = post_json(self.client, "/api/gallery/reports/", {"slug": "gallery"})
+        self.assertEqual(response.status_code, 403)
+
+    def test_manager_sees_all_reports_with_reporter_and_reason(self):
+        self.client.force_login(self.manager)
+        response = post_json(self.client, "/api/gallery/reports/", {"slug": "gallery"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+        # Le plus récent d'abord.
+        self.assertEqual(response.data[0]["reporter_name"], "other_student")
+        self.assertEqual(response.data[0]["category"], "qualité")
+        self.assertEqual(response.data[0]["file_full_name"], "picture.jpg")
+        self.assertEqual(response.data[1]["reporter_name"], "student")
+        self.assertEqual(response.data[1]["message"], "problème")
+        self.assertIn("created_at", response.data[1])
+
+    def test_unknown_gallery_returns_404(self):
+        self.client.force_login(self.manager)
+        response = post_json(self.client, "/api/gallery/reports/", {"slug": "nulle-part"})
+        self.assertEqual(response.status_code, 404)

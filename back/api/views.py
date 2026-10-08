@@ -357,3 +357,18 @@ def report_pic(request):
             status=400,
         )
     return Response(ReportSerializer(report).data, status=201)
+
+
+@api_view(["POST"])
+@permission_classes([IsManager])
+def gallery_reports(request):
+    """For the management side: who flagged which picture, and why."""
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    reports = (
+        Report.objects.filter(file__gallery=gallery)
+        .select_related("file", "reporter")
+        .order_by("-created_at")
+    )
+    return Response(ReportSerializer(reports, many=True).data)
