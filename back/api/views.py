@@ -2,12 +2,13 @@ import os
 
 import galerie.loader as loader
 import galerie.settings as settings
-from api.models import File, Gallery, Year
+from api.models import File, Gallery, Report, Year
 from api.permissions import IsManager, is_manager
 from api.serializers import (
     FileSerializer,
     GallerySerializer,
     PromoSerializer,
+    ReportSerializer,
     YearSerializer,
 )
 from django.db.models import Q
@@ -293,3 +294,50 @@ def years(request):
     years = Year.objects.all().order_by("pk").reverse()
     serializer = YearSerializer(years, many=True)
     return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def report_pic(request):
+    """A logged-in user who can see the gallery flags one of its pictures."""
+    gallery = Gallery.objects.filter(slug=request.data.get("slug")).first()
+    if gallery is None:
+        return Response(
+            {"status": "error", "message": "Cette galerie n'existe pas."}, status=404
+        )
+    if not request.user.is_authenticated:
+        return Response(
+            {
+                "status": "error",
+                "message": "Connectez-vous pour signaler une photo.",
+            },
+            status=403,
+        )
+    if not gallery.can_user_access(request.user):
+        return Response(FORBIDDEN_GALLERY, status=403)
+    if request.data.get("category") not in Report.Category.values:
+        return Response(
+            {"status": "error", "message": "Motif de signalement inconnu."}, status=400
+        )
+    file = File.objects.filter(
+        gallery=gallery, file_full_name=request.data.get("file_full_name")
+    ).first()
+    if file is None:
+        return Response(
+            {"status": "error", "message": "Cette photo n'existe pas."}, status=404
+        )
+    if Report.objects.filter(file=file, reporter=request.user).exists():
+        return Response(
+            {
+                "status": "error",
+                "message": "Vous avez déjà signalé cette photo.",
+            },
+            status=400,
+        )
+    report = Report.objects.create(
+        file=file,
+        reporter=request.user,
+        category=request.data["category"],
+        message=request.data.get("message", ""),
+    )
+    return Response(ReportSerializer(report).data, status=201)

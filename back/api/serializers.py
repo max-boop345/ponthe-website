@@ -1,6 +1,6 @@
 import random
 
-from api.models import File, Gallery, Material, Promo, Year
+from api.models import File, Gallery, Material, Promo, Report, Year
 from rest_framework import serializers
 
 random.seed()
@@ -62,3 +62,19 @@ class PromoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Promo
         fields = ["name", "first_year"]
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    file_full_name = serializers.CharField(source="file.file_full_name", read_only=True)
+    reporter_name = serializers.CharField(source="reporter.username", read_only=True)
+
+    class Meta:
+        model = Report
+        fields = [
+            "id",
+            "file_full_name",
+            "reporter_name",
+            "category",
+            "message",
+            "created_at",
+        ]

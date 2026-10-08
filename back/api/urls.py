@@ -14,6 +14,7 @@ from api.views import (
     get_view,
     getRoutes,
     load_folder_into_gallery,
+    report_pic,
     years,
 )
 from django.urls import path
@@ -25,6 +26,7 @@ urlpatterns = [
     path("gallery/gen_thumb", generate_thumbnails),
     path("gallery/pics/", get_pics),
     path("gallery/pics/delete/", delete_pic),
+    path("gallery/pics/report/", report_pic),
     path("gallery/", get_gallery),
     path("gallery/delete/", delete_gallery),
     path("galleries/create/", create_gallery),
