@@ -27,7 +27,9 @@ def zip_of(files):
     return buffer.getvalue()
 
 
-class ImportTest(TestCase):
+class UploadTestCase(TestCase):
+    """Galerie « sobriete » avec dossiers media, client connecté, upload AJAX."""
+
     def setUp(self):
         self.media = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.media)
@@ -44,6 +46,7 @@ class ImportTest(TestCase):
         os.makedirs(self.path("uploads"))
         os.makedirs(self.path("thumbnails"))
         self.client.force_login(User.objects.create_superuser("admin"))
+        self.ajax_headers = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
 
     def path(self, *parts):
         return os.path.join(self.media, "sobriete", *parts)
@@ -60,9 +63,24 @@ class ImportTest(TestCase):
             )
         return response, thumbnails, load
 
+    def upload_ajax(self, name, content, content_type="application/zip"):
+        patches = (
+            mock.patch("galerie.loader.generate_thumbnails.delay"),
+            mock.patch("galerie.loader.load_folder_into_gallery.delay"),
+        )
+        with patches[0] as thumbnails, patches[1] as load:
+            response = self.client.post(
+                "/gestion/gallery/sobriete",
+                {"zipfile": SimpleUploadedFile(name, content, content_type)},
+                **self.ajax_headers,
+            )
+        return response, thumbnails, load
+
     def zips_left(self):
         return [name for name in os.listdir(self.media) if name.endswith(".zip")]
 
+
+class ImportTest(UploadTestCase):
     def test_zip_name_with_accents_spaces_and_parentheses(self):
         archive = zip_of({"a.jpg": jpeg(), "b.jpg": jpeg()})
         response, thumbnails, load = self.upload("sOBriété 2026 (1).zip", archive)
@@ -137,3 +155,110 @@ class ImportTest(TestCase):
         self.gallery.delete()
         with self.assertLogs("galerie.loader", level="WARNING"):
             loader.load_folder_into_gallery("sobriete")
+
+
+class UploadErrorMessagesTest(UploadTestCase):
+    """L'upload AJAX retourne du JSON avec un message d'erreur clair."""
+
+    def test_ajax_not_a_zip_returns_json_error(self):
+        response, thumbnails, load = self.upload_ajax("photos.zip", b"not a zip")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response["Content-Type"], "application/json")
+        data = response.json()
+        self.assertEqual(data["status"], "error")
+        self.assertIn("zip", data["message"].lower())
+        thumbnails.assert_not_called()
+        load.assert_not_called()
+
+    def test_ajax_empty_file_returns_json_error(self):
+        response, thumbnails, load = self.upload_ajax("empty.zip", b"")
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data["status"], "error")
+        self.assertIn("vide", data["message"].lower())
+        thumbnails.assert_not_called()
+        load.assert_not_called()
+
+    def test_ajax_wrong_extension_returns_json_error(self):
+        archive = zip_of({"a.jpg": jpeg()})
+        response, thumbnails, load = self.upload_ajax("photos.txt", archive, "text/plain")
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data["status"], "error")
+        self.assertIn("zip", data["message"].lower())
+        thumbnails.assert_not_called()
+        load.assert_not_called()
+
+    def test_ajax_file_too_large_returns_json_error(self):
+        archive = zip_of({"a.jpg": jpeg()})
+        with mock.patch("gestion.views.MAX_UPLOAD_SIZE", 10):
+            response, thumbnails, load = self.upload_ajax("big.zip", archive)
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data["status"], "error")
+        self.assertIn("taille maximale", data["message"])
+        thumbnails.assert_not_called()
+        load.assert_not_called()
+
+    def test_ajax_success_returns_json_success(self):
+        archive = zip_of({"a.jpg": jpeg(), "b.jpg": jpeg()})
+        response, thumbnails, load = self.upload_ajax("photos.zip", archive)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        thumbnails.assert_called_once_with("sobriete")
+        load.assert_called_once_with("sobriete")
+
+    def test_ajax_unknown_gallery_returns_json_404(self):
+        response = self.client.post(
+            "/gestion/gallery/nope",
+            {"zipfile": SimpleUploadedFile("a.zip", zip_of({"a.jpg": jpeg()}))},
+            **self.ajax_headers,
+        )
+
+        self.assertEqual(response.status_code, 404)
+        data = response.json()
+        self.assertEqual(data["status"], "error")
+        self.assertIn("galerie", data["message"].lower())
+
+    def test_non_ajax_not_a_zip_still_returns_400_html(self):
+        """Le fallback non-AJAX continue de fonctionner (rétrocompatibilité)."""
+        response, thumbnails, load = self.upload("photos.zip", b"not a zip")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("zip", response.content.decode().lower())
+        thumbnails.assert_not_called()
+        load.assert_not_called()
+
+    def test_ajax_unexpected_error_returns_json_500(self):
+        """Une erreur inattendue garde le contrat JSON pour une requête AJAX."""
+        archive = zip_of({"a.jpg": jpeg()})
+        with mock.patch(
+            "gestion.views.load_zip_into_gallery", side_effect=OSError("disk full")
+        ):
+            response, thumbnails, load = self.upload_ajax("photos.zip", archive)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response["Content-Type"], "application/json")
+        data = response.json()
+        self.assertEqual(data["status"], "error")
+        self.assertIn("erreur", data["message"].lower())
+        thumbnails.assert_not_called()
+        load.assert_not_called()
+        self.assertEqual(self.zips_left(), [])
+
+    def test_non_ajax_unexpected_error_still_raises(self):
+        """Le fallback non-AJAX laisse l'exception remonter (500 Django)."""
+        archive = zip_of({"a.jpg": jpeg()})
+        with mock.patch(
+            "gestion.views.load_zip_into_gallery", side_effect=OSError("disk full")
+        ):
+            with self.assertRaises(OSError):
+                self.upload("photos.zip", archive)
+        self.assertEqual(self.zips_left(), [])

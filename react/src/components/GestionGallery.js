@@ -14,6 +14,8 @@ import GallerySticker from './GallerySticker'
 import Cookies from 'js-cookie';
 import CustomNavbar from './Navbar';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import {Stack, Select, MenuItem} from '@mui/material';
 
 export default function Gallery({props}){
@@ -22,7 +24,7 @@ export default function Gallery({props}){
     const [state, setState] = useState(false);
     //Current loaded picture in modal
     const [current, setCurrent] = useState(null);
-    const [picsList, setPicsList] = useState([]);
+    const [picsData, setPicsData] = useState([]);
     const [pics, setPics] = useState([]);
     const [name, setName] = useState('');
     const [addModalState, setaddModalState] = useState(false);
@@ -30,8 +32,10 @@ export default function Gallery({props}){
     const [view, setView] = useState('gallery');
     //Reports received state
     const [reports, setReports] = useState(null);
-
-    const cookie = Cookies.get('csrftoken')
+    const [uploadError, setUploadError] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [isCompact, setIsCompact] = useState(false);
 
     const requestOptions = {
       method: 'POST',
@@ -53,11 +57,63 @@ export default function Gallery({props}){
     };
 
     const openAddModal = () => {
+      setUploadError('');
+      setSelectedFile(null);
       setaddModalState(true)
     }
 
     const closeAddModal = () => {
       setaddModalState(false)
+    }
+
+    const handleUpload = async (e) => {
+      e.preventDefault();
+      setUploadError('');
+
+      if (!selectedFile) {
+        setUploadError('Veuillez sélectionner un fichier .zip.');
+        return;
+      }
+
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append('zipfile', selectedFile);
+
+      try {
+        const response = await fetch('/gestion/gallery/' + gallery_slug, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': Cookies.get('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: formData,
+        });
+
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          // Réponse non JSON (page d'erreur d'un proxy, ...) : data reste vide
+        }
+
+        if (!response.ok || data.status === 'error') {
+          setUploadError(data.message || 'Une erreur est survenue lors de l\'envoi.');
+        } else {
+          // Succès : fermer le modal et recharger la page
+          closeAddModal();
+          window.location.reload(false);
+        }
+      } catch (err) {
+        console.log(err)
+        setUploadError('Erreur réseau : impossible de contacter le serveur.');
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    const toggleCompact = () => {
+      setIsCompact(prev => !prev);
     }
 
     //Goto next picture in modal
@@ -117,7 +173,6 @@ export default function Gallery({props}){
     };
 
     useEffect(() => {
-      let picsDiv = []
       let picsTemp = []
       fetch('/api/gallery/pics/', requestOptions)
       .then(res => res.json())
@@ -125,17 +180,9 @@ export default function Gallery({props}){
         (result) => {
           for(const pic in result){
             picsTemp.push(result[pic].link + '/uploads/' + result[pic].file_full_name)
-            picsDiv.push(
-            <Col key={pic} xs="4" sm="3" lg="2">
-              <GallerySticker img={result[pic].link + '/uploads/' + result[pic].file_full_name}
-                              thumb={result[pic].link + '/thumbnails/' + result[pic].file_full_name}
-                              modal_func={toggleModal}/>
-            </Col>
-            )
           }
-          setPicsList(picsDiv)
+          setPicsData(result)
           setPics(picsTemp)
-          console.log(pics)
         },
         (error) => {
           console.log(error)
@@ -259,6 +306,10 @@ export default function Gallery({props}){
               <AddCircleOutlineIcon className="icon" onClick={openAddModal}/>
               <DeleteIcon onClick={deleteGallery} className="icon"/>
               <FlagIcon onClick={loadReports} className="icon" titleAccess="Signalements"/>
+              {isCompact
+                ? <ZoomInIcon className="icon" onClick={toggleCompact} titleAccess="Vue normale"/>
+                : <ZoomOutIcon className="icon" onClick={toggleCompact} titleAccess="Vue dézoomée"/>
+              }
               <Select style={{padding:0, height: "40px"}}value={visibility} onChange={e =>
               {
                 setVisibility(e.target.value)
@@ -281,7 +332,14 @@ export default function Gallery({props}){
         </div>
         <Container fluid>
           <Row className='g-1'>
-            {picsList}
+            {picsData.map((pic, index) => (
+              <Col key={index} xs={isCompact ? "3" : "4"} sm={isCompact ? "2" : "3"} lg={isCompact ? "1" : "2"}>
+                <GallerySticker img={pic.link + '/uploads/' + pic.file_full_name}
+                                thumb={pic.link + '/thumbnails/' + pic.file_full_name}
+                                modal_func={toggleModal}
+                                compact={isCompact}/>
+              </Col>
+            ))}
           </Row>
         </Container>
 
@@ -307,10 +365,21 @@ export default function Gallery({props}){
           <div className='pic-modal'>
             <div ref={ref} className='add-modal-content'>
               <span className='close-white-modal' onClick={closeAddModal}>&times;</span>
-              <form method="POST" class="post-form" enctype="multipart/form-data">
-                  <input type="hidden" name="csrfmiddlewaretoken" value={cookie} />
-                  <input type='file' name='zipfile'/>
-                  <button type="submit" className="login-button">Lancer l'envoi</button>
+              <form className="post-form" onSubmit={handleUpload}>
+                  <input
+                    type='file'
+                    name='zipfile'
+                    accept='.zip'
+                    onChange={(e) => setSelectedFile(e.target.files[0] || null)}
+                  />
+                  {uploadError && <p className="upload-error" role="alert">{uploadError}</p>}
+                  <button
+                    type="submit"
+                    className="login-button"
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Envoi en cours...' : "Lancer l'envoi"}
+                  </button>
                 </form>
             </div>
           </div>

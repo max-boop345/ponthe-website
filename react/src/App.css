@@ -83,6 +83,29 @@ body{
   object-fit: cover;
 }
 
+
+/* Vue dézoomée gestion : miniatures plus petites pour voir plus de photos */
+.gallery-sticker.compact {
+  height: 80px;
+}
+
+.gallery-img.compact {
+  height: 80px;
+}
+
+/* Mobile : en mode compact, garder le ratio carré comme en mode normal */
+@media screen and (max-width: 575px) {
+  .gallery-sticker.compact {
+    height: auto;
+  }
+
+  .gallery-img.compact {
+    display: block;
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
+
 .galleries-img{
   height: 256px;
   object-fit: cover;
@@ -530,6 +553,20 @@ body{
   padding-left:10px;
   padding-top: 10px;
   padding-bottom: 10px;
+  font-family: 'Inter';
+  color:white;
+  border-left: 3px solid rgb(255, 0, 0);
+  border-radius: 5px;
+}
+
+/* Messages d'erreur upload (TODO #8) */
+.upload-error{
+  background-color: rgb(247, 103, 103);
+  padding-left:10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
   font-family: 'Inter';
   color:white;
   border-left: 3px solid rgb(255, 0, 0);
