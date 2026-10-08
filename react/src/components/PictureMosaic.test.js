@@ -108,3 +108,38 @@ describe('PictureMosaic report button', () => {
         expect(JSON.parse(options.body).file_full_name).toBe('picture.jpg');
     });
 });
+
+describe('PictureMosaic selection mode', () => {
+    test('in selection mode, clicking a sticker selects instead of opening the modal', () => {
+        const onToggleSelect = jest.fn();
+        const { container } = render(
+            <PictureMosaic
+                result={PICS}
+                selectionMode={true}
+                selected={new Set()}
+                onToggleSelect={onToggleSelect}
+            />
+        );
+        fireEvent.click(container.querySelector('.gallery-sticker'));
+        expect(onToggleSelect).toHaveBeenCalledWith('picture.jpg');
+        expect(container.querySelector('.img-modal')).not.toBeInTheDocument();
+    });
+
+    test('in selection mode, the selected sticker carries the selected class', () => {
+        const { container } = render(
+            <PictureMosaic
+                result={PICS}
+                selectionMode={true}
+                selected={new Set(['picture.jpg'])}
+                onToggleSelect={jest.fn()}
+            />
+        );
+        expect(container.querySelector('.gallery-sticker.selected')).toBeInTheDocument();
+    });
+
+    test('outside selection mode, clicking a sticker still opens the modal', () => {
+        const { container } = render(<PictureMosaic result={PICS} />);
+        fireEvent.click(container.querySelector('.gallery-sticker'));
+        expect(container.querySelector('.img-modal')).toBeInTheDocument();
+    });
+});

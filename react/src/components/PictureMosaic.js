@@ -109,18 +109,23 @@ const PictureMosaic = (props) => {
         const picsTemp = []
         const picsDiv = []
         for (const pic in props.result) {
-            picsTemp.push(props.result[pic].link + '/uploads/' + props.result[pic].file_full_name)
+            const file = props.result[pic]
+            picsTemp.push(file.link + '/uploads/' + file.file_full_name)
             picsDiv.push(
                 <Col key={pic} xs="4" sm="3" lg="2">
-                    <GallerySticker img={props.result[pic].link + '/uploads/' + props.result[pic].file_full_name}
-                        thumb={props.result[pic].link + '/thumbnails/' + props.result[pic].file_full_name}
-                        modal_func={toggleModal} />
+                    <GallerySticker img={file.link + '/uploads/' + file.file_full_name}
+                        thumb={file.link + '/thumbnails/' + file.file_full_name}
+                        modal_func={toggleModal}
+                        selectionMode={props.selectionMode}
+                        selected={props.selected && props.selected.has(file.file_full_name)}
+                        onToggleSelect={props.onToggleSelect}
+                        fileFullName={file.file_full_name} />
                 </Col>
             )
         }
         setPicsList(picsDiv)
         setPics(picsTemp)
-    }, [props.result]);
+    }, [props.result, props.selectionMode, props.selected]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

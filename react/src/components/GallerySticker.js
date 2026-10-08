@@ -17,7 +17,7 @@ const GallerySticker = (props) => {
             <div className={'gallery-sticker' + compactClass + selectedClass} onClick={handleClick}>
                 {props.selectionMode && (
                   <span className={'sticker-check' + (props.selected ? '' : ' sticker-check-off')}>
-                    <CheckCircleIcon/>
+                    <CheckCircleIcon titleAccess={props.selected ? 'Sélectionnée' : 'Non sélectionnée'}/>
                   </span>
                 )}
                 <img loading='lazy' className={'gallery-img' + compactClass} src={props.thumb} width="100%"/>
