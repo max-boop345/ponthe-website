@@ -83,7 +83,12 @@ export default function Gallery({props}){
           body: formData,
         });
 
-        const data = await response.json();
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          // Réponse non JSON (page d'erreur d'un proxy, ...) : data reste vide
+        }
 
         if (!response.ok || data.status === 'error') {
           setUploadError(data.message || 'Une erreur est survenue lors de l\'envoi.');
@@ -93,6 +98,7 @@ export default function Gallery({props}){
           window.location.reload(false);
         }
       } catch (err) {
+        console.log(err)
         setUploadError('Erreur réseau : impossible de contacter le serveur.');
       } finally {
         setUploading(false);
@@ -324,7 +330,7 @@ export default function Gallery({props}){
                     accept='.zip'
                     onChange={(e) => setSelectedFile(e.target.files[0] || null)}
                   />
-                  {uploadError && <p className="upload-error">{uploadError}</p>}
+                  {uploadError && <p className="upload-error" role="alert">{uploadError}</p>}
                   <button
                     type="submit"
                     className="login-button"

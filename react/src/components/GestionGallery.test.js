@@ -176,7 +176,9 @@ describe('GestionGallery', () => {
 
     // Error message should appear
     await waitFor(() => {
-      expect(screen.getByText("Le fichier envoyé n'est pas un zip valide.")).toBeInTheDocument();
+      const errorEl = screen.getByText("Le fichier envoyé n'est pas un zip valide.");
+      expect(errorEl).toBeInTheDocument();
+      expect(errorEl).toHaveAttribute('role', 'alert');
     });
   });
 
@@ -298,89 +300,106 @@ describe('GestionGallery', () => {
     delete window.location;
     window.location = { ...originalLocation, reload: jest.fn() };
 
-    global.fetch = jest.fn((url, options) => {
-      if (url.includes('/gestion/gallery/') && options && options.method === 'POST') {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ status: 'success' }),
-        });
-      }
-      if (url.includes('/api/gallery/pics/')) {
-        return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
-      }
-      if (url.includes('/api/gallery/')) {
-        return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
-      }
-      return Promise.resolve({ json: () => Promise.resolve({}) });
-    });
+    try {
+      global.fetch = jest.fn((url, options) => {
+        if (url.includes('/gestion/gallery/') && options && options.method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ status: 'success' }),
+          });
+        }
+        if (url.includes('/api/gallery/pics/')) {
+          return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
+        }
+        if (url.includes('/api/gallery/')) {
+          return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
+        }
+        return Promise.resolve({ json: () => Promise.resolve({}) });
+      });
 
-    render(<GestionGallery />);
-    await waitFor(() => {
-      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
-    });
+      render(<GestionGallery />);
+      await waitFor(() => {
+        expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+      });
 
-    const addButton = screen.getByTestId('AddCircleOutlineIcon');
-    fireEvent.click(addButton);
-    await waitFor(() => {
-      expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
-    });
+      const addButton = screen.getByTestId('AddCircleOutlineIcon');
+      fireEvent.click(addButton);
+      await waitFor(() => {
+        expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
+      });
 
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = new File(['zip content'], 'photos.zip', { type: 'application/zip' });
-    fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.click(screen.getByText("Lancer l'envoi"));
+      const fileInput = document.querySelector('input[type="file"]');
+      const file = new File(['zip content'], 'photos.zip', { type: 'application/zip' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+      fireEvent.click(screen.getByText("Lancer l'envoi"));
 
-    await waitFor(() => {
-      expect(window.location.reload).toHaveBeenCalled();
-    });
+      await waitFor(() => {
+        expect(window.location.reload).toHaveBeenCalled();
+      });
 
-    window.location = originalLocation;
+      // Le modal est fermé
+      expect(screen.queryByText("Lancer l'envoi")).not.toBeInTheDocument();
+    } finally {
+      window.location = originalLocation;
+    }
   });
 
   test('upload button is disabled while uploading', async () => {
-    let resolveUpload;
-    global.fetch = jest.fn((url, options) => {
-      if (url.includes('/gestion/gallery/') && options && options.method === 'POST') {
-        return new Promise((resolve) => { resolveUpload = resolve; });
-      }
-      if (url.includes('/api/gallery/pics/')) {
-        return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
-      }
-      if (url.includes('/api/gallery/')) {
-        return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
-      }
-      return Promise.resolve({ json: () => Promise.resolve({}) });
-    });
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { ...originalLocation, reload: jest.fn() };
 
-    render(<GestionGallery />);
-    await waitFor(() => {
-      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
-    });
+    try {
+      let resolveUpload;
+      global.fetch = jest.fn((url, options) => {
+        if (url.includes('/gestion/gallery/') && options && options.method === 'POST') {
+          return new Promise((resolve) => { resolveUpload = resolve; });
+        }
+        if (url.includes('/api/gallery/pics/')) {
+          return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
+        }
+        if (url.includes('/api/gallery/')) {
+          return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
+        }
+        return Promise.resolve({ json: () => Promise.resolve({}) });
+      });
 
-    const addButton = screen.getByTestId('AddCircleOutlineIcon');
-    fireEvent.click(addButton);
-    await waitFor(() => {
-      expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
-    });
+      render(<GestionGallery />);
+      await waitFor(() => {
+        expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+      });
 
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = new File(['content'], 'test.zip', { type: 'application/zip' });
-    fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.click(screen.getByText("Lancer l'envoi"));
+      const addButton = screen.getByTestId('AddCircleOutlineIcon');
+      fireEvent.click(addButton);
+      await waitFor(() => {
+        expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
+      });
 
-    // Button should be disabled and show "Envoi en cours..."
-    await waitFor(() => {
-      const button = screen.getByText(/envoi en cours/i);
-      expect(button).toBeDisabled();
-    });
+      const fileInput = document.querySelector('input[type="file"]');
+      const file = new File(['content'], 'test.zip', { type: 'application/zip' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+      fireEvent.click(screen.getByText("Lancer l'envoi"));
 
-    // Resolve the upload
-    resolveUpload({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ status: 'success' }),
-    });
+      // Button should be disabled and show "Envoi en cours..."
+      await waitFor(() => {
+        const button = screen.getByText(/envoi en cours/i);
+        expect(button).toBeDisabled();
+      });
+
+      // Resolve the upload
+      resolveUpload({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 'success' }),
+      });
+
+      await waitFor(() => {
+        expect(window.location.reload).toHaveBeenCalled();
+      });
+    } finally {
+      window.location = originalLocation;
+    }
   });
 
   test('no file selected shows error on submit', async () => {
@@ -452,5 +471,98 @@ describe('GestionGallery', () => {
       expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
     });
     expect(screen.queryByText('Erreur test')).not.toBeInTheDocument();
+  });
+
+  test('upload modal shows generic error when response is not JSON', async () => {
+    global.fetch = jest.fn((url, options) => {
+      if (url.includes('/gestion/gallery/') && options && options.method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 502,
+          json: () => Promise.reject(new Error('Unexpected token < in JSON')),
+        });
+      }
+      if (url.includes('/api/gallery/pics/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
+      }
+      if (url.includes('/api/gallery/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) });
+    });
+
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    const addButton = screen.getByTestId('AddCircleOutlineIcon');
+    fireEvent.click(addButton);
+    await waitFor(() => {
+      expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
+    });
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = new File(['x'], 'test.zip', { type: 'application/zip' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    fireEvent.click(screen.getByText("Lancer l'envoi"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Une erreur est survenue lors de l'envoi.")).toBeInTheDocument();
+    });
+  });
+
+  test('reopening the modal clears the previously selected file', async () => {
+    global.fetch = jest.fn((url, options) => {
+      if (url.includes('/gestion/gallery/') && options && options.method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({ status: 'error', message: 'Erreur test' }),
+        });
+      }
+      if (url.includes('/api/gallery/pics/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockPicsResponse) });
+      }
+      if (url.includes('/api/gallery/')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockGalleryResponse) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({}) });
+    });
+
+    render(<GestionGallery />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('gallery-sticker').length).toBe(2);
+    });
+
+    // Open modal, select a file, trigger an error
+    const addButton = screen.getByTestId('AddCircleOutlineIcon');
+    fireEvent.click(addButton);
+    await waitFor(() => {
+      expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
+    });
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = new File(['x'], 'test.zip', { type: 'application/zip' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    fireEvent.click(screen.getByText("Lancer l'envoi"));
+
+    await waitFor(() => {
+      expect(screen.getByText('Erreur test')).toBeInTheDocument();
+    });
+
+    // Close and reopen — the file input is fresh and empty
+    fireEvent.click(document.querySelector('.close-white-modal'));
+    fireEvent.click(addButton);
+    await waitFor(() => {
+      expect(screen.getByText("Lancer l'envoi")).toBeInTheDocument();
+    });
+    expect(document.querySelector('input[type="file"]').value).toBe('');
+
+    // Submitting without a new selection asks for a file
+    fireEvent.click(screen.getByText("Lancer l'envoi"));
+    await waitFor(() => {
+      expect(screen.getByText(/sélectionn/i)).toBeInTheDocument();
+    });
   });
 });

@@ -1014,10 +1014,16 @@ git add -A && git commit -m "test(gestion): manual E2E verification of upload er
 | `back/gestion/views.py` | JSON responses, validations (vide, extension, taille), JSON 500 sur erreur inattendue | `back/test/test_import.py` — 9 nouveaux tests |
 | `back/test/test_import.py` | **Modifié** — classe `UploadErrorMessagesTest` + base `UploadTestCase` partagée | 9 tests : non-zip, vide, mauvaise extension, trop gros, succès, galerie inconnue, fallback non-AJAX, erreur inattendue AJAX (JSON 500), erreur inattendue non-AJAX (raise) |
 | `react/src/components/GestionGallery.js` | fetch + FormData, états `uploadError`/`uploading`/`selectedFile`, `handleUpload` | `GestionGallery.test.js` — 8 nouveaux tests |
-| `react/src/components/GestionGallery.test.js` | **Créé** — mocks + 4 tests de base + 8 tests upload + 1 test contrat CSS (Task 3) | erreur serveur, fichier vide, mauvaise extension, erreur réseau, succès+reload, bouton désactivé, pas de fichier, erreur cleared on reopen, CSS contract |
+| `react/src/components/GestionGallery.test.js` | **Créé** — mocks + 4 tests de base + 10 tests upload + 1 test contrat CSS (Task 3) | erreur serveur, fichier vide, mauvaise extension, erreur réseau, succès+reload, bouton désactivé, pas de fichier, erreur cleared on reopen, réponse non JSON, réouverture efface le fichier, CSS contract |
 | `react/src/App.css` | `.upload-error` (style rouge comme `.login-error`) | Test de contrat CSS |
 
-**Total : 18 nouveaux tests** (9 backend + 9 frontend) couvrant chaque cas d'erreur et chaque ligne de code ajoutée.
+**Total : 20 nouveaux tests** (9 backend + 11 frontend) couvrant chaque cas d'erreur et chaque ligne de code ajoutée.
+
+## Retours de revue (appliqués après Task 1 et Task 2)
+
+- **Task 1 (code quality)** : `gallery_view` retourne maintenant du JSON 500 pour les erreurs inattendues en AJAX (re-raise en non-AJAX) + 2 tests ; scaffolding de test dédupliqué via une base `UploadTestCase` partagée.
+- **Task 2 (code quality)** : `role="alert"` sur le message d'erreur + test ; parsing JSON isolé dans son propre try (réponse non JSON → message générique "Une erreur est survenue lors de l'envoi.") + test ; `console.log(err)` dans le catch (pattern existant du fichier) ; mock `window.location.reload` dans le test "bouton désactivé" + try/finally pour restaurer `window.location` dans les deux tests concernés + assertion "modal fermé" après succès.
+- **Note** : le signalement d'un désynchronisation input fichier / état (`openAddModal` remet `selectedFile` à null mais l'input est incontrôlé) s'est révélé un faux positif — le modal est rendu conditionnellement (`{addModalState && ...}`), donc l'input est démonté à la fermeture et recréé vide à la réouverture. Un test le vérifie ("reopening the modal clears the previously selected file").
 
 ## Flux de données
 
