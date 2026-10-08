@@ -3,10 +3,9 @@ import os
 import shutil
 import zipfile
 
-from api.models import File, Gallery, Year
+from api.models import File, Gallery, Report, Year
 from django.contrib.auth.models import User
 from django.test import TestCase
-
 from galerie.loader import gallery_path
 
 from .test_api import post_json
@@ -122,9 +121,7 @@ class DownloadPicsAccessTest(TestCase):
 
     def setUp(self):
         os.makedirs(gallery_path(PRIVATE_SLUG, "uploads"), exist_ok=True)
-        with open(
-            gallery_path(PRIVATE_SLUG, "uploads", "picture.jpg"), "wb"
-        ) as f:
+        with open(gallery_path(PRIVATE_SLUG, "uploads", "picture.jpg"), "wb") as f:
             f.write(b"fake image bytes")
 
     def tearDown(self):
@@ -169,7 +166,9 @@ class DeletePicsTest(TestCase):
         cls.student = User.objects.create_user("student")
         cls.manager = User.objects.create_user("manager", is_staff=True)
 
-    def delete_many(self, slug="select-delete", names=("picture.jpg", "other.jpg"), who=None):
+    def delete_many(
+        self, slug="select-delete", names=("picture.jpg", "other.jpg"), who=None
+    ):
         if who is not None:
             self.client.force_login(who)
         return post_json(
@@ -202,3 +201,22 @@ class DeletePicsTest(TestCase):
         response = self.delete_many(names=(), who=self.manager)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(File.objects.filter(gallery=self.gallery).count(), 3)
+
+    def test_deleted_counts_only_pictures_not_reports(self):
+        Report.objects.create(
+            file=File.objects.get(gallery=self.gallery, file_full_name="picture.jpg"),
+            reporter=self.student,
+        )
+        response = self.delete_many(who=self.manager)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["deleted"], 2)
+        self.assertEqual(Report.objects.count(), 0)
+
+    def test_names_not_a_list_returns_400(self):
+        self.client.force_login(self.manager)
+        response = post_json(
+            self.client,
+            "/api/gallery/pics/delete_many/",
+            {"slug": "select-delete", "file_full_names": "picture.jpg"},
+        )
+        self.assertEqual(response.status_code, 400)

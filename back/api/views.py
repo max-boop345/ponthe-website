@@ -340,9 +340,9 @@ def delete_pics(request):
         return Response(
             {"status": "error", "message": "Aucune photo sélectionnée."}, status=400
         )
-    deleted, _ = File.objects.filter(
-        gallery=gallery, file_full_name__in=names
-    ).delete()
+    files = File.objects.filter(gallery=gallery, file_full_name__in=names)
+    deleted = files.count()
+    files.delete()
     return Response({"status": "ok", "deleted": deleted})
 
 
