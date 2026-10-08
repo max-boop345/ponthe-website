@@ -27,3 +27,6 @@ yarn-error.log*
 
 # worktrees
 .worktrees
+
+# superdesign local files
+.superdesign/
