@@ -24,7 +24,7 @@ const CustomNavbar = ({props}) => {
               </Nav>
               <Nav>
                 {!is_authenticated && (<a className="nav-text" href="/login">Connexion</a> )}
-                {is_authenticated && (<a className="nav-text" href="/logout">Deconnexion</a> )}
+                {is_authenticated && (<a className="nav-text" href="/logout">Déconnexion</a> )}
               </Nav>
             </Navbar.Collapse>
           </Container>

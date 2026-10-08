@@ -44,10 +44,10 @@ describe('Galleries (page liste des galeries)', () => {
   test('renders the pervenche banner with the poster title and yellow accent', async () => {
     render(<Galleries view="galerie" />);
     await waitFor(() =>
-      expect(screen.getByText('GALRIES')).toBeInTheDocument()
+      expect(screen.getByText('GALERIES')).toBeInTheDocument()
     );
-    expect(screen.getByText('RIES')).toBeInTheDocument();
-    expect(screen.getByText('GALRIES').closest('.hero-banner')).toBeInTheDocument();
+    expect(screen.getByText('ERIES')).toBeInTheDocument();
+    expect(screen.getByText('GALERIES').closest('.hero-banner')).toBeInTheDocument();
   });
 
   test('renders one pill per year, the first one active', async () => {
@@ -100,7 +100,7 @@ describe('Galleries (page liste des galeries)', () => {
         expect.anything()
       )
     );
-    expect(screen.getByText('GALRIES')).toBeInTheDocument();
+    expect(screen.getByText('GALERIES')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '2025-2026' })).not.toBeInTheDocument();
     expect(screen.queryByTestId('gallery-mosaic')).not.toBeInTheDocument();
   });

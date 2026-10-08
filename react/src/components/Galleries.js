@@ -43,7 +43,7 @@ export default function Galleries(props) {
   }, [])
 
   const titleStart = props.view === 'exposition' ? 'EXPOS' : 'GAL';
-  const titleEnd = props.view === 'exposition' ? 'ITIONS' : 'RIES';
+  const titleEnd = props.view === 'exposition' ? 'ITIONS' : 'ERIES';
 
   return (
       <>

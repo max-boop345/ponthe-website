@@ -198,7 +198,7 @@ def create_gallery(request):
         return Response(
             {
                 "status": "error",
-                "message": "Impossible de créer les dossiers galeries.",
+                "message": "Impossible de créer les dossiers de la galerie.",
             },
             status=400,
         )
